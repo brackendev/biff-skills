@@ -246,7 +246,45 @@ Behavior:
 | (default) `:xtdb.api/put` | Replace the entire document. |
 | `:merge` | Merge into the existing document, or create it if missing. |
 | `:update` | Merge into the existing document. Transaction fails if the document does not exist. |
+| `:create` | Create the document. Transaction fails if it already exists. |
 | `:delete` | Delete the document. |
+
+Biff inserts `:xtdb.api/match` operations behind the scenes for `:merge` and `:update` so concurrent writes do not silently overwrite each other.
+
+### Upsert by attribute (`:db.op/upsert`)
+
+`:db.op/upsert` (note the namespace: `db.op`, not `db/op`) updates a document matched by the given attribute-value pairs, or creates a new one with a fresh `:xt/id` if no match exists. This is the recommended way to express the "create-if-missing, otherwise merge" pattern:
+
+```clojure
+(biff/submit-tx ctx
+                [{:db/doc-type     :user
+                  :db.op/upsert    {:user/email "hello@example.com"}
+                  :user/joined-at  :db/now}])
+```
+
+The operation is atomic via a transaction function and requires `:biff/ensure-unique` to be installed. New projects install it by default; if you build a system map yourself, pass `:tx-fns biff/tx-fns` to `use-xtdb`. Prefer `:db.op/upsert` over the older `:db/lookup` form, which is deprecated.
+
+### Per-attribute operations
+
+A handful of sentinels operate on a single attribute and use its previous value:
+
+| Sentinel | Effect |
+|----------|--------|
+| `[:db/union & vs]` | Coerce the previous value to a set, then `clojure.set/union` in the new values. |
+| `[:db/difference & vs]` | Set-difference the listed values from the previous value. |
+| `[:db/add n]` | Add `n` to a numeric attribute. |
+| `[:db/default v]` | Set the attribute only if it is currently absent. |
+| `:db/dissoc` | Remove the attribute. |
+| `[:db/unique v]` | Set the attribute and abort if any other document has the same value. Requires `:biff/ensure-unique`. |
+
+```clojure
+[{:db/op       :update
+  :db/doc-type :post
+  :xt/id       post-id
+  :post/tags   [:db/union "clojure" "almonds"]
+  :post/views  [:db/add 1]
+  :post/draft  :db/dissoc}]
+```
 
 ### Contention and retries
 
