@@ -58,4 +58,4 @@ Runtime install (requires `apm` and the runtime CLIs you want to verify: `claude
 | `user-invocable: true`, `disable-model-invocation: true` | User-only slash command (for example `biff-new`, `biff-deploy`). |
 | `user-invocable: false` (or omitted) | Model-invoked from conversation context (for example `biff`). |
 
-Every skill carries `agents/openai.yaml` whose `policy.allow_implicit_invocation` matches the table above (`true` for model-invoked, `false` for user-only). All skills use the Biff indigo brand color, `#4338CA`.
+Every skill carries `agents/openai.yaml` whose `policy.allow_implicit_invocation` matches the table above (`true` for model-invoked, `false` for user-only). All skills use the Biff indigo brand color, `#4338CA`, so the runtimes can distinguish Biff-specific guidance from the host-neutral `clojure` baseline (Clojure logo blue, `#5881D8`), the JVM `clojure-jvm` skill (Java orange, `#E76F00`), the ClojureScript skill (JavaScript yellow, `#F7DF1E`), the Fulcro framework skill (Fulcro teal, `#009E9E`), and the ClojureDart skill (Flutter blue, `#02569B`).
