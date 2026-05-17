@@ -1,0 +1,10 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "permission": {
+    "skill": {
+      "biff": "allow",
+      "biff-new": "allow",
+      "biff-deploy": "allow"
+    }
+  }
+}

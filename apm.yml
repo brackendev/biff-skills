@@ -1,0 +1,16 @@
+name: biff-skills
+version: 0.1.0
+description: Biff web framework toolkit covering scaffolding, conventions, quality checks, and deployment.
+author: Bracken Spencer
+license: MIT
+target: all
+type: skill
+dependencies:
+  apm: []
+  mcp: []
+devDependencies:
+  apm: []
+compilation:
+  target: all
+  strategy: distributed
+  source_attribution: true

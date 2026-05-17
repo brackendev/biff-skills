@@ -1,0 +1,8 @@
+interface:
+  display_name: "Biff New"
+  short_description: "Scaffold a new Biff web application."
+  default_prompt: "Run /biff-new my-app."
+  brand_color: "#4338CA"
+
+policy:
+  allow_implicit_invocation: false

@@ -1,0 +1,8 @@
+interface:
+  display_name: "Biff"
+  short_description: "Biff web framework conventions: modules, XTDB transactions, htmx, auth, deployment."
+  default_prompt: "Review this Biff code for idiomatic framework usage."
+  brand_color: "#4338CA"
+
+policy:
+  allow_implicit_invocation: true
