@@ -21,7 +21,7 @@ user-invocable: false
 
 Biff is a Clojure web framework that bundles XTDB (with Malli schema enforcement), htmx with hyperscript, passwordless email authentication, a module-plus-system-map architecture, live REPL with file-watch, and Ubuntu VPS / Docker / uberjar deployment. It targets solo developers and small teams.
 
-This skill covers Biff-specific conventions. For general Clojure style, follow the `clojure` skill from the companion [clojure-skills](https://github.com/brackendev/clojure-skills) package. Run the shared quality pipeline via `/clj-check` from that package; pass `dev` as a lint path so the Biff `dev/repl.clj` and `dev/tasks.clj` helpers are covered. There is no Biff-specific check command -- the underlying Clojure tooling is identical.
+This skill covers Biff-specific conventions. For general Clojure style, follow the `clojure` skill from the companion [clojure-skills](https://github.com/brackendev/clojure-skills) package. Run the shared quality pipeline via `/clj-tidy` from that package; pass `dev` as a lint path so the Biff `dev/repl.clj` and `dev/tasks.clj` helpers are covered. There is no Biff-specific check command -- the underlying Clojure tooling is identical.
 
 ## Project Layout
 

@@ -1,14 +1,27 @@
 ---
 name: biff-new
 description: Scaffold a new Biff web application
-argument-hint: "[project-name]"
+argument-hint: <project-name>
 user-invocable: true
 disable-model-invocation: true
 ---
 
 # Scaffold a Biff Project
 
-Create a new [Biff](https://biffweb.com/) web application using the official starter command. The starter generates a minimal CRUD app that demonstrates most Biff features.
+Create a new [Biff](https://biffweb.com/) web application using the official starter command. The starter generates a minimal CRUD app that demonstrates most Biff features. See `CONVENTIONS.md` in the repo root for the argument grammar this skill follows.
+
+## Arguments
+
+| Input             | Target                                                                       |
+|-------------------|------------------------------------------------------------------------------|
+| `<project-name>`  | Required. The directory name for the new project (the official scaffolder prompts for the main namespace separately). |
+| (no argument)     | Prompt the operator for a project name, main namespace, and project directory before running the scaffolder. |
+
+This skill is exempt from the `all` and `<path>` rows of the standard scope vocabulary because scaffolding has no useful default scope. See `CONVENTIONS.md` for the standard.
+
+## Mutation
+
+Mutates by default: runs the official Biff scaffolder (`clj -M -e '(load-string (slurp "https://biffweb.com/new.clj"))'`), which is interactive and writes a complete starter project tree (see the `biff` skill's Project Layout section for what is written). After the scaffolder finishes, this skill runs `clj -M:dev dev` once to generate `config.env`, build the Tailwind CSS, and verify the app responds on `localhost:8080`. No `--report` flag; preview the side effects by reading this `SKILL.md` and the upstream `https://biffweb.com/new.clj` script.
 
 ## Prerequisites
 

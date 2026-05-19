@@ -1,7 +1,7 @@
 interface:
   display_name: "Biff Deploy"
   short_description: "Deploy a Biff app to an Ubuntu VPS, Docker image, or uberjar."
-  default_prompt: "Run /biff-deploy."
+  default_prompt: "Run /biff-deploy. Add --report to preview without writing."
   brand_color: "#4338CA"
 
 policy:

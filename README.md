@@ -40,31 +40,35 @@ Update later with `apm update [-g]`. Remove with `apm uninstall brackendev/biff-
 ## Requirements
 
 - [Clojure CLI](https://clojure.org/guides/install_clojure) and Java 17 or higher for any skill in this package.
-- [clojure-skills](https://github.com/brackendev/clojure-skills) installed alongside, for the host-neutral baseline plus `/clj-check` and `/clj-smells-review`.
+- [clojure-skills](https://github.com/brackendev/clojure-skills) installed alongside, for the host-neutral baseline plus `/clj-tidy` and `/clj-smells-review`.
 - [clojure-jvm-skills](https://github.com/brackendev/clojure-jvm-skills) installed alongside, for JVM-specific Clojure guidance the `biff` skill defers to (Java interop, JVM exceptions, refs / agents / STM, `alter-var-root`, the CLI workflow).
 
 ## Skills
 
+User-invocable skills follow the conventions documented in [CONVENTIONS.md](CONVENTIONS.md): natural-language keywords and bare paths, no `--name` flags other than `--report`, mutation as the default, and a shared scope vocabulary.
+
 ### Scaffolding and quality
 
-#### `/biff-new [project-name]`
+#### `/biff-new <project-name>`
 
-Scaffold a new Biff project using the official `clj -M -e '(load-string ...)'` installer. Confirms the namespace and project directory before running, then verifies the first `clj -M:dev dev`.
+Scaffold a new Biff project using the official `clj -M -e '(load-string ...)'` installer. Confirms the namespace and project directory before running, then verifies the first `clj -M:dev dev`. `<project-name>` is required; the skill omits the `all`, `<path>`, and `--report` rows because scaffolding has no useful default scope or preview.
 
 ```bash
 /biff-new my-app
 ```
 
-For lint / format / test / duplicate-form checks, use `/clj-check` from [clojure-skills](https://github.com/brackendev/clojure-skills). Pass `dev` as a lint path so the Biff `dev/repl.clj` and `dev/tasks.clj` helpers are covered.
+For lint / format / test / duplicate-form checks, use `/clj-tidy` from [clojure-skills](https://github.com/brackendev/clojure-skills). Pass `dev` as a lint path so the Biff `dev/repl.clj` and `dev/tasks.clj` helpers are covered.
 
-#### `/biff-deploy [vps|docker|uberjar]`
+#### `/biff-deploy [vps|docker|uberjar] [--report]`
 
-Deploy a Biff app. Defaults to the managed Ubuntu VPS path (`server-setup.sh` + `clj -M:dev deploy`). Also supports Docker image and standalone uberjar builds. Verifies the deploy with `clj -M:dev logs` and a smoke check against the configured domain.
+Deploy a Biff app. Defaults to the managed Ubuntu VPS path (`server-setup.sh` + `clj -M:dev deploy`). Also supports Docker image and standalone uberjar builds. Verifies the deploy with `clj -M:dev logs` and a smoke check against the configured domain. Pass `--report` to print the planned commands (resolved target host, upload manifest, image tag, or uberjar output path) without writing or running anything.
 
 ```bash
 /biff-deploy
 /biff-deploy docker
 /biff-deploy uberjar
+/biff-deploy --report
+/biff-deploy docker --report
 ```
 
 ### Auto-triggered

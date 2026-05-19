@@ -2,6 +2,25 @@
 
 ## [Unreleased]
 
+## [0.1.2]
+
+### Added
+
+- `CONVENTIONS.md` at the repo root defines the argument grammar, scope vocabulary, and mutation defaults that every user-invocable skill in this plugin follows. The three rules: natural-language keywords and bare paths with `--report` as the only sanctioned flag, a shared scope vocabulary (`(no argument)`, `all`, `<path>`, with opt-in rows for pull requests and commit messages), and mutation as the default.
+- `/biff-deploy` now accepts `--report` to print the planned commands for the selected deployment path (resolved target host, `git ls-files` upload manifest, Docker image tag, or uberjar output path) without writing or running anything.
+- `/biff-deploy` accepts the scope keyword `all` as a synonym for the default VPS path. Accepted for family consistency with the standard scope vocabulary.
+
+### Changed
+
+- `/biff-new` and `/biff-deploy` now carry the canonical `## Arguments` table documented in `CONVENTIONS.md`. `/biff-new` is exempt from the `all` and `<path>` rows because scaffolding has no useful default scope; `/biff-deploy` operates on deployment-target keywords (`vps`, `docker`, `uberjar`) rather than file paths.
+- Skill bodies that reference the sibling `clojure-skills` quality pipeline now point at `/clj-tidy` instead of `/clj-check`, matching the rename in that companion package.
+
+### Migration
+
+- Saved `/biff-deploy` invocations that pass `vps`, `docker`, or `uberjar` continue to work unchanged. Pass `--report` to receive a preview of the planned commands for the selected path without writing or running anything.
+- Saved `/biff-new <project-name>` invocations continue to work unchanged.
+- Workflows that ran `/clj-check` from the companion `clojure-skills` package now use `/clj-tidy`; the references in this plugin's documentation point at the new name.
+
 ## [0.1.1]
 
 ### Added
