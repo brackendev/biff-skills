@@ -3,8 +3,9 @@
   "permission": {
     "skill": {
       "biff": "allow",
-      "biff-new": "allow",
-      "biff-deploy": "allow"
+      "biff-deploy": "allow",
+      "biff-lenses": "allow",
+      "biff-new": "allow"
     }
   }
 }

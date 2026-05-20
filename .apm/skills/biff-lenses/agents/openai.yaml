@@ -1,0 +1,8 @@
+interface:
+  display_name: "Biff Lenses"
+  short_description: "Translate code-lenses philosophies into Biff-specific patterns. Defaults: grug, Honest Code, Tidy First, Parse Don't Validate; APOSD and Legacy Code are opt-in."
+  default_prompt: "Apply the relevant code-lenses translation to this Biff code."
+  brand_color: "#4338CA"
+
+policy:
+  allow_implicit_invocation: true

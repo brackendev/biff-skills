@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-05-20
+
+### Added
+
+- New `biff-lenses` skill (model-invoked, auto-triggered alongside the [code-lenses](https://github.com/brackendev/code-lenses) plugin). Translates the four default code-lenses philosophies (grug, Honest Code, Tidy First, Parse Don't Validate) and the two opt-in philosophies (APOSD, Legacy Code) into Biff-specific patterns. Records only the Biff-specific deltas on top of `clojure-lenses`: XTDB transactions through `biff/submit-tx`, Malli schema enforcement via `:db/doc-type` and `doc-schema`, the module + system-map architecture, htmx response patterns, the authentication module, scheduled tasks via `use-chime`, transaction listeners, queues via `biff/submit-job`, and the live REPL workflow. Closes the Clojure-family gap where `clojure-skills`, `clojurescript-skills`, `clojuredart-skills`, and `fulcro-skills` all ship a `*-lenses` companion but `biff-skills` did not.
+
+### Changed
+
+- Skill bodies and documentation that reference the sibling `clojure-skills` quality pipeline now point at `/clj-fix` instead of `/clj-tidy`, matching the rename in that companion package. The behavior is unchanged; only the command name moves to the family-wide noun-first canonical naming.
+
 ## [0.1.2]
 
 ### Added

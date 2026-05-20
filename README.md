@@ -2,7 +2,7 @@
 
 [Biff](https://biffweb.com/) web framework skills packaged as an [APM](https://github.com/microsoft/apm) plugin. One install deploys the full set to every runtime APM supports: Claude Code, Codex, OpenCode, Cursor, Copilot, Gemini, and Windsurf.
 
-Skills follow the [Agent Skills](https://agentskills.io) open standard. The `biff` style and conventions skill auto-triggers from conversation context; the rest appear as slash commands.
+Skills follow the [Agent Skills](https://agentskills.io) open standard. The `biff` style and conventions skill and the `biff-lenses` code-review companion auto-trigger from conversation context; the rest appear as slash commands.
 
 ## Companion packages
 
@@ -40,7 +40,7 @@ Update later with `apm update [-g]`. Remove with `apm uninstall brackendev/biff-
 ## Requirements
 
 - [Clojure CLI](https://clojure.org/guides/install_clojure) and Java 17 or higher for any skill in this package.
-- [clojure-skills](https://github.com/brackendev/clojure-skills) installed alongside, for the host-neutral baseline plus `/clj-tidy` and `/clj-smells-review`.
+- [clojure-skills](https://github.com/brackendev/clojure-skills) installed alongside, for the host-neutral baseline plus `/clj-fix` and `/clj-smells-review`.
 - [clojure-jvm-skills](https://github.com/brackendev/clojure-jvm-skills) installed alongside, for JVM-specific Clojure guidance the `biff` skill defers to (Java interop, JVM exceptions, refs / agents / STM, `alter-var-root`, the CLI workflow).
 
 ## Skills
@@ -57,7 +57,7 @@ Scaffold a new Biff project using the official `clj -M -e '(load-string ...)'` i
 /biff-new my-app
 ```
 
-For lint / format / test / duplicate-form checks, use `/clj-tidy` from [clojure-skills](https://github.com/brackendev/clojure-skills). Pass `dev` as a lint path so the Biff `dev/repl.clj` and `dev/tasks.clj` helpers are covered.
+For lint / format / test / duplicate-form checks, use `/clj-fix` from [clojure-skills](https://github.com/brackendev/clojure-skills). Pass `dev` as a lint path so the Biff `dev/repl.clj` and `dev/tasks.clj` helpers are covered.
 
 #### `/biff-deploy [vps|docker|uberjar] [--report]`
 
@@ -78,6 +78,7 @@ These skills activate from conversation context. They cannot be invoked directly
 | Skill | Triggers |
 |-------|----------|
 | **biff** | `com.biffweb` namespace, `biff/submit-tx`, `biff/q`, `biff/lookup`, `biff/form`, `doc-schema`, `:db/doc-type`, `:db.id/*`, `resources/config.edn`, `config.env`, `dev/repl.clj`, `dev/tasks.clj`, `src/com/*/app.clj`, `home.clj`, `worker.clj`, `schema.clj`, `hx-*` attributes in Clojure code, `use-jetty`, `use-xtdb`, `use-chime`, `use-beholder`, `biff/submit-job`, `biff/authentication-module`, `clj -M:dev dev`, `clj -M:dev deploy`, `server-setup.sh`, or any mention of Biff or biffweb. Covers the module + system-map architecture, project layout, routes, transactions and queries against XTDB with Malli schema, htmx patterns, authentication, scheduled tasks, transaction listeners, queues, and REPL workflow. Defers to the `clojure` skill in [clojure-skills](https://github.com/brackendev/clojure-skills) for host-neutral style and to the `clojure-jvm` skill in [clojure-jvm-skills](https://github.com/brackendev/clojure-jvm-skills) for Java interop, JVM exception handling, refs / agents / STM, `alter-var-root`, and the Clojure CLI / `tools.build` / `clj-kondo` / `cljfmt` / `test-runner` / nREPL workflow. |
+| **biff-lenses** | Auto-triggers alongside the [code-lenses](https://github.com/brackendev/code-lenses) plugin in Biff work. Layers on top of `clojure-lenses` (in `clojure-skills`) and records only the Biff-specific deltas: XTDB transactions through `biff/submit-tx`, Malli schema enforcement via `:db/doc-type` and `doc-schema`, the module + system-map architecture, htmx response patterns, the authentication module, scheduled tasks via `use-chime`, transaction listeners, queues via `biff/submit-job`, and the live REPL workflow. Covers the four default code-lenses philosophies (grug, Honest Code, Tidy First, Parse Don't Validate) and the two opt-in philosophies (APOSD, Legacy Code) that activate when their lens is added with `+aposd` or `+legacy-code` or invoked directly. |
 
 ## Contributing
 
