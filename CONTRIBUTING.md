@@ -12,6 +12,7 @@ For people working on the plugin source. End-user install instructions live in [
 | `opencode.jsonc`, `.opencode/package.json` | Local OpenCode configuration. |
 | `README.md` | End-user documentation. |
 | `CHANGELOG.md` | User-facing changes per version. |
+| `CONVENTIONS.md` | Canonical argument grammar, scope vocabulary, and mutation defaults for every user-invocable skill. |
 | `CLAUDE.md`, `TODO.md` | Local working notes. Gitignored globally; never committed. |
 
 ## APM lockfile rule
@@ -53,13 +54,11 @@ Runtime install (requires `apm` and the runtime CLIs you want to verify: `claude
 
 ## Skill conventions
 
+For the argument grammar, scope vocabulary, and mutation defaults that every user-invocable skill follows, see [CONVENTIONS.md](CONVENTIONS.md).
+
 | Setting | When to use |
 |---------|-------------|
 | `user-invocable: true`, `disable-model-invocation: true` | User-only slash command (for example `biff-new`, `biff-deploy`). |
 | `user-invocable: false` (or omitted) | Model-invoked from conversation context (for example `biff`). |
 
 Every skill carries `agents/openai.yaml` whose `policy.allow_implicit_invocation` matches the table above (`true` for model-invoked, `false` for user-only). All skills use the Biff indigo brand color, `#4338CA`, so the runtimes can distinguish Biff-specific guidance from the host-neutral `clojure` baseline (Clojure logo blue, `#5881D8`), the JVM `clojure-jvm` skill (Java orange, `#E76F00`), the ClojureScript skill (JavaScript yellow, `#F7DF1E`), the Fulcro framework skill (Fulcro teal, `#009E9E`), and the ClojureDart skill (Flutter blue, `#02569B`).
-
-### Argument grammar, scope, and mutation
-
-User-invocable skills follow the three rules documented in [CONVENTIONS.md](CONVENTIONS.md): natural-language keywords and bare paths (the only sanctioned flag is `--report`), a shared scope vocabulary (`(no argument)`, `all`, `<path>`, with opt-in rows for pull requests and commit messages), and mutation as the default. Walk the author checklist at the bottom of `CONVENTIONS.md` before merging a new or modified user-invocable skill.

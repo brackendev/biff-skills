@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [0.1.4] - 2026-05-20
+
+### Changed
+
+- `CONTRIBUTING.md` is aligned to the family-wide structural template. A `CONVENTIONS.md` row is added to the Layout table, and the H3 "Argument grammar, scope, and mutation" subsection is collapsed back into the parent H2 Skill conventions section (its content moves to the canonical pointer paragraph that now opens that section).
+
 ## [0.1.3] - 2026-05-20
 
 ### Added
