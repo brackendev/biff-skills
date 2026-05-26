@@ -1,7 +1,7 @@
 ---
 name: biff-new
-description: Scaffold a new Biff web application
-argument-hint: <project-name>
+description: "Scaffold a new Biff web application"
+argument-hint: "<project-name>"
 user-invocable: true
 disable-model-invocation: true
 ---

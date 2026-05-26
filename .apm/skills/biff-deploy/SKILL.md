@@ -1,6 +1,6 @@
 ---
 name: biff-deploy
-description: Deploy a Biff app to an Ubuntu VPS, or build a Docker / uberjar artifact
+description: "Deploy a Biff app to an Ubuntu VPS, or build a Docker / uberjar artifact"
 argument-hint: "[vps|docker|uberjar] [--report]"
 user-invocable: true
 disable-model-invocation: true
