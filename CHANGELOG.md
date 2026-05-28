@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [0.1.6] - 2026-05-28
+
+### Added
+
+- `CONVENTIONS.md` gains Rule 4: vendored and generated paths are excluded by default from mutating skills that walk the workspace. The rule sits alongside the existing three rules (renamed from "The three rules" to "The four rules"). Two filters apply together (`.gitignore` matches plus a hardcoded floor of dependency directories, build outputs, and lock files). The override rides on Rule 1's existing `<path>` `<glob>` grammar; no new flag is introduced. No skill in this plugin discovers candidate files from the workspace today: both `/biff-new` and `/biff-deploy` are exempt because their target sets are defined by explicit project operations. The rule is recorded so any future fix-style skill honors the same contract as its companion packages.
+
 ## [0.1.5] - 2026-05-26
 
 ### Fixed

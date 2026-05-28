@@ -4,7 +4,7 @@ This document defines the argument grammar, scope vocabulary, and mutation defau
 
 These conventions apply to user-invocable skills (`user-invocable: true` in frontmatter). Model-invocable reference skills with no argument surface (currently `biff`) carry no argument grammar and are exempt from rules 1 and 2.
 
-## The three rules
+## The four rules
 
 ### Rule 1: argument grammar
 
@@ -43,6 +43,29 @@ Skills that can mutate the workspace apply changes when invoked. The operator pa
 Only the literal token `--report` enables report-only mode. Natural-language phrases ("preview", "dry run", "rehearse") are scope input or step keywords, not mode triggers. A skill that conflates them is wrong.
 
 Command verbs reinforce the default. Skills named `/biff-new` and `/biff-deploy` (verbs that imply action) mutate by default. The plugin currently ships no pure-report user-invocable skill; a future review-style skill would carry a reading verb (`/biff-review-*`, `/biff-audit-*`, `/biff-check-*`) and omit `--report`.
+
+### Rule 4: vendored and generated paths are excluded by default
+
+A mutating skill that walks the workspace excludes vendored, generated, and dependency-locked paths from its scope. The operator opts back in per file by naming the path explicitly. No new `--name` flag is introduced; the override rides on Rule 1's `<path>` `<glob>` row.
+
+The boundary statement: Rule 4 applies to mutating skills that discover candidate files from the workspace. It does not apply to skills whose target set is defined by an explicit project operation, template, dependency model, git operation, or named path argument.
+
+**Exclusion set.** Two filters apply together. A path that matches either filter is excluded.
+
+1. `.gitignore`-matched paths. Anything excluded by the project's `.gitignore`, `.git/info/exclude`, or the global excludes file is out of scope. Resolve membership with `git check-ignore -v -- <path>`.
+2. Hardcoded floor (excluded even when the project tracks the path):
+
+   | Category | Patterns |
+   |----------|----------|
+   | Dependency directories | `node_modules/`, `vendor/`, `third_party/`, `.bundle/` |
+   | Build outputs | `target/`, `build/`, `dist/`, `out/`, `.shadow-cljs/`, `cljd-out/` |
+   | Lock files | `*.lock`, `package-lock.json`, `yarn.lock`, `pnpm-lock.yaml`, `Gemfile.lock`, `Cargo.lock`, `poetry.lock`, `composer.lock` |
+
+**Override.** When the operator names a vendored or generated file in the arguments through the `<path>` `<glob>` row, the filter does not apply to that target. Naming the path directly is treated as informed consent. The filter remains active for broad scopes: `(no argument)`, `all`, or a directory whose contents include vendored sub-paths.
+
+**Reporting.** The skill includes a single "skipped N vendored or generated paths" line in its results when the filter excluded any path. Under `--report`, the skill emits the full list so the operator can audit scope.
+
+**Scope of Rule 4 in this plugin.** No skill in this plugin discovers candidate files from the workspace today. Both `/biff-new` (scaffolds a new project tree from the official Biff installer) and `/biff-deploy` (runs a deployment command and a `git ls-files` upload manifest) are exempt because their target sets are defined by explicit project operations, not workspace discovery. The rule is recorded so any future fix-style skill in this plugin honors the same contract as its companion packages.
 
 ## Classification
 
@@ -124,6 +147,7 @@ When adding or modifying a user-invocable skill, confirm each item before commit
 - [ ] If the skill is pure-report, the verb signals it (a future `/biff-review-*`, `/biff-audit-*`, or `/biff-check-*` skill) and the skill has no `--report` flag.
 - [ ] No `## Customization` section.
 - [ ] No `--name` flags other than `--report`. Tool-level flags the skill calls internally (for example, `clj -M:dev deploy`, `clj -T:build uber`, `docker build -t`) are not skill flags and do not count.
+- [ ] Mutating skills that walk the workspace include a one-line Rule 4 reference in their `## Mutation` or `## Scope` section. Exempt skills (scaffolding, deployment, dependency upgrade, fixed targets, git operations, named paths) carry no reference.
 - [ ] Frontmatter `name` matches the skill's directory name.
 - [ ] OpenCode mirror under `.opencode/skills/<name>/SKILL.md` is byte-identical to the canonical source.
 - [ ] `agents/openai.yaml` `default_prompt` references the current command name.
