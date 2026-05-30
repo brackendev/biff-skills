@@ -43,6 +43,17 @@ Update later with `apm update [-g]`. Remove with `apm uninstall brackendev/biff-
 - [clojure-skills](https://github.com/brackendev/clojure-skills) installed alongside, for the host-neutral baseline plus `/clj-fix` and `/clj-smells-review`.
 - [clojure-jvm-skills](https://github.com/brackendev/clojure-jvm-skills) installed alongside, for JVM-specific Clojure guidance the `biff` skill defers to (Java interop, JVM exceptions, refs / agents / STM, `alter-var-root`, the CLI workflow).
 
+## Command guide
+
+A quick guide to every slash command. The detailed entries under [Skills](#skills) cover arguments and examples.
+
+| Command | Use it when | What it does |
+|---------|-------------------|--------------|
+| `/biff-new` | Starting a new Biff project | Scaffolds via the official installer and verifies the first `clj -M:dev dev` |
+| `/biff-deploy` | Deploying a Biff app | Deploys via VPS, Docker, or uberjar, then verifies with logs and a smoke check |
+
+For lint, format, and test, use `/clj-fix` from [clojure-skills](https://github.com/brackendev/clojure-skills).
+
 ## Skills
 
 User-invocable skills follow the conventions documented in [CONVENTIONS.md](CONVENTIONS.md): natural-language keywords and bare paths, no `--name` flags other than `--report`, mutation as the default, and a shared scope vocabulary.
