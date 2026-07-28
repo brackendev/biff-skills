@@ -1,6 +1,6 @@
 # biff-skills
 
-[Biff](https://biffweb.com/) web framework skills packaged as an [APM](https://github.com/microsoft/apm) plugin. One install deploys the full set to every runtime APM supports: Claude Code, Codex, OpenCode, Cursor, Copilot, Gemini, Windsurf, and Kiro.
+[Biff](https://biffweb.com/) web framework skills packaged as an [APM](https://github.com/microsoft/apm) plugin. One install deploys the full set to every runtime in APM's default target set: Claude Code, Codex, OpenCode, Cursor, Copilot, Gemini, Windsurf, and Kiro. Antigravity is supported by naming it explicitly with `--target antigravity`.
 
 Skills follow the [Agent Skills](https://agentskills.io) open standard. The `biff` style and conventions skill and the `biff-lenses` code-review companion auto-trigger from conversation context; the rest appear as slash commands.
 

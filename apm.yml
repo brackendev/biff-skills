@@ -1,5 +1,5 @@
 name: biff-skills
-version: 0.1.8
+version: 0.1.9
 description: Biff web framework toolkit covering scaffolding, conventions, quality checks, and deployment. Layers on top of clojure-skills and clojure-jvm-skills.
 author: Bracken Spencer
 license: MIT
