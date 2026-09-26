@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.1.11] - 2026-09-26
+
+### Fixed
+
+- The `biff-lenses` skill no longer tells the agent to rely on queue retries after swallowing an exception. Biff queues do not retry a job that throws, which the `biff` skill and its reference already stated.
+- The `biff-lenses` skill now describes `:db.op/upsert` correctly: it matches on the given attribute values and updates that document, or creates a new one, instead of overwriting.
+- The `biff-deploy` and `biff-new` skills no longer point the agent at a `CONVENTIONS.md` file. That file ships only with this package repository, so it is absent from the Biff project where the skills run.
+
+### Changed
+
+- The `biff-lenses` skill now triggers when a code-lenses review or refactor runs against Biff code, rather than on every Biff symbol that also triggers the `biff` skill.
+
 ## [0.1.10] - 2026-09-16
 
 ### Changed

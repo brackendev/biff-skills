@@ -8,7 +8,7 @@ disable-model-invocation: true
 
 # Scaffold a Biff Project
 
-Create a new [Biff](https://biffweb.com/) web application using the official starter command. The starter generates a minimal CRUD app that demonstrates most Biff features. See `CONVENTIONS.md` in the repo root for the argument grammar this skill follows.
+Create a new [Biff](https://biffweb.com/) web application using the official starter command. The starter generates a minimal CRUD app that demonstrates most Biff features.
 
 ## Arguments
 
@@ -17,7 +17,7 @@ Create a new [Biff](https://biffweb.com/) web application using the official sta
 | `<project-name>`  | Required. The directory name for the new project (the official scaffolder prompts for the main namespace separately). |
 | (no argument)     | Prompt the operator for a project name, main namespace, and project directory before running the scaffolder. |
 
-This skill is exempt from the `all` and `<path>` rows of the standard scope vocabulary because scaffolding has no useful default scope. See `CONVENTIONS.md` for the standard.
+This skill is exempt from the `all` and `<path>` rows of the standard scope vocabulary because scaffolding has no useful default scope.
 
 ## Mutation
 

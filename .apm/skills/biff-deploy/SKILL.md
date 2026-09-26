@@ -8,7 +8,7 @@ disable-model-invocation: true
 
 # Deploy a Biff App
 
-Biff supports three deployment paths: a managed Ubuntu VPS (the default), a Docker image, or a standalone uberjar. Run this skill from inside a Biff project. See `CONVENTIONS.md` in the repo root for the argument grammar this skill follows.
+Biff supports three deployment paths: a managed Ubuntu VPS (the default), a Docker image, or a standalone uberjar. Run this skill from inside a Biff project.
 
 ## Arguments
 

@@ -1,21 +1,14 @@
 ---
 name: biff-lenses
 description: >-
-  Translate code-lenses design philosophies into Biff-specific patterns.
-  Auto-triggers when working on Biff code (com.biffweb namespace,
-  biff/submit-tx, biff/q, biff/lookup, biff/form, doc-schema, :db/doc-type,
-  :db.id/* keyword ids, resources/config.edn, dev/repl.clj, dev/tasks.clj,
-  src/com/*/app.clj, home.clj, worker.clj, schema.clj, hx-* htmx attributes,
-  use-jetty, use-xtdb, use-chime, use-beholder, biff/submit-job,
-  biff/authentication-module) alongside the code-lenses plugin. Layers on top of
-  clojure-lenses (in clojure-skills); records only the Biff-specific deltas that
-  come from XTDB transactions with Malli schema enforcement, the module +
-  system-map architecture, htmx response patterns, the authentication module,
-  scheduled tasks via use-chime, transaction listeners, queues via
-  biff/submit-job, and the REPL workflow. Covers the four default code-lenses
-  philosophies (grug, Honest Code, Tidy First, Parse Don't Validate) and the two
-  opt-in philosophies (APOSD, Legacy Code) that activate when their lens is
-  added with `+aposd` or `+legacy-code` or invoked directly.
+  Translate code-lenses design philosophies (grug, Honest Code, Tidy First,
+  Parse Don't Validate, and the opt-in APOSD and Legacy Code lenses) into
+  Biff-specific patterns. Use when a code-lenses review or refactor runs
+  against Biff code: XTDB transactions through biff/submit-tx with Malli
+  doc-schema, the module + system-map architecture, htmx handlers, the
+  authentication module, use-chime tasks, transaction listeners, queues via
+  biff/submit-job, and the REPL workflow. Layers on clojure-lenses from
+  clojure-skills.
 user-invocable: false
 ---
 
@@ -74,7 +67,7 @@ When the [code-lenses](https://github.com/brackendev/code-lenses) plugin is acti
 - The system map is honest about dependencies. A module declares its needs (Jetty, XTDB, chime) by composing `use-*` components; nothing happens by hidden side effect at namespace load time.
 - `biff/submit-tx` is honest data flow. The call declares "this transaction goes through schema validation, transaction listeners, and the queue"; raw `xtdb.api/submit-tx` calls bypass that flow and are dishonest.
 - htmx attributes are honest about intent. `hx-post="/login"` and `hx-target="#card"` declare exactly what the button does and where the response goes; client-side JavaScript handlers that intercept the request and reshape the payload are dishonest.
-- Let It Crash, Biff edition: surface errors as Ring `500` responses or push them to the job-failure path. Do not swallow exceptions in `try`/`catch` around `submit-tx`; let the listener or queue handler retry.
+- Let It Crash, Biff edition: surface errors as Ring `500` responses or let a failing job throw. Do not swallow exceptions in `try`/`catch` around `submit-tx`. Biff queues do not retry a job that throws, so work that must eventually succeed needs a persistent mechanism, not a catch block.
 - The Biff app state at any moment is the XTDB index plus the system map. Tests that build a known XTDB fixture, submit a transaction, and assert the resulting query result are the honest characterization.
 
 ## Legacy Code
@@ -95,7 +88,7 @@ When the [code-lenses](https://github.com/brackendev/code-lenses) plugin is acti
 - A handler that mutates the system atom directly (`(reset! (:biff/system ctx) new-state)`) bypasses the module structure and breaks reload. "Tidy first" should never collapse a module function into a system-atom mutation.
 - "Extract helper" inside a route handler must keep the response map together. Pulling the hiccup body into a helper that returns a string and assembling the response map by hand loses the htmx response shape that the rest of the codebase expects.
 - `biff/submit-tx` runs synchronously on the calling thread; submitting a 10,000-document transaction inside a handler blocks the response. Reach for `biff/submit-job` and a worker for bulk transactions.
-- `:db/op :create` rejects documents whose id already exists; `:db.op/upsert` overwrites. Confusing the two surfaces as silent "the create succeeded but the document looks wrong" bugs.
+- `:db/op :create` fails the transaction when the document id already exists. `:db.op/upsert {:user/email "..."}` matches on the given attribute values and updates that document, or creates one with a fresh `:xt/id`. Using `:create` where upsert semantics were intended surfaces as a failed transaction on the second submit.
 - Transaction listeners run after the transaction is durable. Side effects in listeners (sending email, enqueuing jobs) cannot be rolled back if the listener throws; idempotent listener bodies are the way.
 - `use-beholder` reloads namespaces on file change. Bare `def` forms that compute expensive values at load time will recompute on every save; wrap them in `defonce` or move the computation to a runtime function.
 - htmx responses must include the `hx-*` attributes the caller expects. A fragment returned without `hx-swap-oob` or the right `id` will swap silently into the wrong place; check the network tab when the UI does not update.
