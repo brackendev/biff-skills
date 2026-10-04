@@ -12,7 +12,7 @@ User-invocable skills accept natural-language keywords and bare paths. The singl
 
 Skill-specific modifiers are bare phrases, not flags. Examples used in this plugin:
 
-- `vps`, `docker`, `uberjar`: deployment-target keywords for `/biff-deploy`
+- `vps`, `soft`, `uberjar`: deployment-target keywords for `/biff-deploy`
 - `<project-name>`: required positional argument for `/biff-new`
 - `all`, `<path>`, `<glob>`: shared scope keywords listed in rule 2
 
@@ -65,7 +65,7 @@ The boundary statement: Rule 4 applies to mutating skills that discover candidat
 
 **Reporting.** The skill includes a single "skipped N vendored or generated paths" line in its results when the filter excluded any path. Under `--report`, the skill emits the full list so the operator can audit scope.
 
-**Scope of Rule 4 in this plugin.** No skill in this plugin discovers candidate files from the workspace today. Both `/biff-new` (scaffolds a new project tree from the official Biff installer) and `/biff-deploy` (runs a deployment command and a `git ls-files` upload manifest) are exempt because their target sets are defined by explicit project operations, not workspace discovery. The rule is recorded so any future fix-style skill in this plugin honors the same contract as its companion packages.
+**Scope of Rule 4 in this plugin.** No skill in this plugin discovers candidate files from the workspace today. Both `/biff-new` (clones the official Biff starter project and initializes it) and `/biff-deploy` (runs the project's deployment tasks against the current git branch) are exempt because their target sets are defined by explicit project operations, not workspace discovery. The rule is recorded so any future fix-style skill in this plugin honors the same contract as its companion packages.
 
 ## Classification
 
@@ -81,8 +81,8 @@ A skill is classified by its actual behavior, not by its name. If the name and b
 
 | Skill           | Class    | `--report` available? | Notes |
 |-----------------|----------|------------------------|-------|
-| `/biff-new`     | Mutating | No                     | Scaffolds the project tree via the official `clj -M -e '(load-string ...)'` installer. Preview the side effects by reading `SKILL.md`. |
-| `/biff-deploy`  | Mutating | Yes                    | Default path is the managed Ubuntu VPS via `server-setup.sh` and `clj -M:dev deploy`. `--report` prints the deployment path, target host, and the command sequence (including the `git ls-files` upload manifest for the VPS path) without running anything. |
+| `/biff-new`     | Mutating | No                     | Clones the official `biff-starter` repository and runs its `clj -M:run init` task. Preview the side effects by reading `SKILL.md`. |
+| `/biff-deploy`  | Mutating | Yes                    | Default path is an Ubuntu server provisioned with `clj -M:run prod-setup` and updated with `clj -M:run deploy`. `--report` prints the deployment path, the resolved domain, the branch and worktree state, the uploaded untracked files, and the command sequence without running anything. |
 
 The model-invocable `biff` skill has no argument surface and is not classified here.
 
@@ -101,15 +101,15 @@ The section name `## Customization` is retired.
 ### `/biff-deploy` -- mutating skill with `--report`
 
 ```
-/biff-deploy                  # default vps path; rsync or git push, restart, tail logs
-/biff-deploy docker           # build the starter Dockerfile image
-/biff-deploy uberjar          # build the standalone uberjar via clj -T:build uber
-/biff-deploy --report         # print the planned commands and upload manifest; no writes
-/biff-deploy docker --report  # print the docker build command and image tag; no writes
+/biff-deploy                  # default vps path; prod-setup once, then git push and restart
+/biff-deploy soft             # push and evaluate changed files without a restart
+/biff-deploy uberjar          # build target/jar/app.jar via clj -M:run uberjar
+/biff-deploy --report         # print the planned commands, domain, and branch state; no writes
+/biff-deploy uberjar --report # print the uberjar command and output path; no writes
 /biff-deploy all              # synonym for (no argument)
 ```
 
-The default deploys via the VPS path (`server-setup.sh` + `clj -M:dev deploy`). Each remote-touching command still asks the operator for confirmation, which is layered on top of the standard mutate-by-default contract. With `--report`, the skill prints the planned command sequence (including the resolved target host, the deploy command, the `git ls-files` upload manifest for the VPS path, and the docker image tag or uberjar output path) and writes nothing. The `## Mutation` section in the skill body documents the per-command confirmation behavior.
+The default deploys via the VPS path (`clj -M:run prod-setup` on first use, then `clj -M:run deploy`). Each remote-touching command still asks the operator for confirmation, which is layered on top of the standard mutate-by-default contract. With `--report`, the skill prints the planned command sequence (including the resolved domain and deployment name, the current branch, whether the worktree is clean, the untracked files the deploy uploads, or the uberjar output path) and writes nothing. The `## Mutation` section in the skill body documents the per-command confirmation behavior.
 
 ### `/biff-new` -- mutating skill, exemption from `all`/path rows
 
@@ -118,7 +118,7 @@ The default deploys via the VPS path (`server-setup.sh` + `clj -M:dev deploy`). 
 /biff-new                    # prompts the operator for a project name and namespace
 ```
 
-`<project-name>` is a required positional argument. The skill omits the `all` and `<path>` rows because they would not be meaningful for scaffolding. It also omits `--report` because preview is meaningless: the operator reads the upstream `https://biffweb.com/new.clj` script (and this `SKILL.md`) to see what files will be written. The exemption is listed below.
+`<project-name>` is a required positional argument. The skill omits the `all` and `<path>` rows because they would not be meaningful for scaffolding. It also omits `--report` because preview is meaningless: the operator reads the upstream `biff-starter` repository (and this `SKILL.md`) to see what files will be written. The exemption is listed below.
 
 ## Exemptions
 
@@ -126,15 +126,15 @@ The default deploys via the VPS path (`server-setup.sh` + `clj -M:dev deploy`). 
 
 ## Ambiguity notes
 
-**`(no argument)` outside a git worktree.** A skill whose narrowest useful default depends on git state (for example, "deploy the current commit") must define the fallback when no git worktree is present. `/biff-deploy` requires a Biff project on disk (it reads `resources/config.edn` and `config.env`) and runs `git ls-files` for the VPS upload manifest. If the working directory is not a Biff project or not a git worktree, the skill stops and reports the missing prerequisite rather than widening silently.
+**`(no argument)` outside a git worktree.** A skill whose narrowest useful default depends on git state (for example, "deploy the current commit") must define the fallback when no git worktree is present. `/biff-deploy` requires a Biff project on disk (it reads `resources/config.edn` and `config.env`), and its VPS and soft paths push the current git branch, which requires a clean worktree and a checked-out branch. If the working directory is not a Biff project or not a git worktree, the skill stops and reports the missing prerequisite rather than widening silently.
 
 **`commit` versus staged-and-unstaged state.** When a future skill accepts `commit` as a scope keyword, it must state whether `commit` means the most recent commit, the staged tree, or the staged-plus-unstaged working tree. The expected default is the most recent commit. None of the current skills carry this scope.
 
-**`--report` versus natural-language synonyms.** "Preview", "dry run", "rehearse", and similar phrases are scope input or step keywords (or operator chatter), never mode triggers. Only the literal `--report` token disables writes. `/biff-deploy` accepts the deployment-target keywords `vps`, `docker`, and `uberjar`; none of those are mode-toggle words.
+**`--report` versus natural-language synonyms.** "Preview", "dry run", "rehearse", and similar phrases are scope input or step keywords (or operator chatter), never mode triggers. Only the literal `--report` token disables writes. `/biff-deploy` accepts the deployment-target keywords `vps`, `soft`, and `uberjar`; none of those are mode-toggle words.
 
-**Step keywords versus scope keywords.** `/biff-deploy` accepts deployment-target keywords (`vps`, `docker`, `uberjar`) that select work to run, and the scope keyword `all` (a synonym for the default VPS path, accepted for family consistency). Target keywords are skill-specific and listed in the skill's own table. Scope keywords are shared and listed here. When a skill has both, the `## Arguments` table lists both with clearly distinct rows.
+**Step keywords versus scope keywords.** `/biff-deploy` accepts deployment-target keywords (`vps`, `soft`, `uberjar`) that select work to run, and the scope keyword `all` (a synonym for the default VPS path, accepted for family consistency). Target keywords are skill-specific and listed in the skill's own table. Scope keywords are shared and listed here. When a skill has both, the `## Arguments` table lists both with clearly distinct rows.
 
-**Tool-level flags the skill calls internally.** A skill may invoke a tool that itself uses POSIX flags (for example, `clj -M:dev deploy`, `clj -T:build uber`, `docker build -t`, `curl -fsS`, `git ls-files`). Those are tool-level flags, not skill flags, and do not count against rule 1. The skill body should disambiguate when a tool flag could be mistaken for a skill flag.
+**Tool-level flags the skill calls internally.** A skill may invoke a tool that itself uses POSIX flags (for example, `clj -M:run deploy --soft`, `clj -M:run prod-setup --copy-only`, `curl -fsS`, `git status --porcelain`). Those are tool-level flags, not skill flags, and do not count against rule 1. The `soft` keyword selects the `deploy --soft` task; the operator types the bare keyword, never the flag. The skill body should disambiguate when a tool flag could be mistaken for a skill flag.
 
 ## Author checklist
 
@@ -146,7 +146,7 @@ When adding or modifying a user-invocable skill, confirm each item before commit
 - [ ] If the skill mutates and preview is useful, `--report` is documented.
 - [ ] If the skill is pure-report, the verb signals it (a future `/biff-review-*`, `/biff-audit-*`, or `/biff-check-*` skill) and the skill has no `--report` flag.
 - [ ] No `## Customization` section.
-- [ ] No `--name` flags other than `--report`. Tool-level flags the skill calls internally (for example, `clj -M:dev deploy`, `clj -T:build uber`, `docker build -t`) are not skill flags and do not count.
+- [ ] No `--name` flags other than `--report`. Tool-level flags the skill calls internally (for example, `clj -M:run deploy --soft`, `curl -fsS`) are not skill flags and do not count.
 - [ ] Mutating skills that walk the workspace include a one-line Rule 4 reference in their `## Mutation` or `## Scope` section. Exempt skills (scaffolding, deployment, dependency upgrade, fixed targets, git operations, named paths) carry no reference.
 - [ ] Frontmatter `name` matches the skill's directory name.
 - [ ] OpenCode mirror under `.opencode/skills/<name>/SKILL.md` is byte-identical to the canonical source.

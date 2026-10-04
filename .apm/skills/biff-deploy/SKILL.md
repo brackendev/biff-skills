@@ -1,123 +1,117 @@
 ---
 name: biff-deploy
-description: "Deploy a Biff app to an Ubuntu VPS, or build a Docker / uberjar artifact"
-argument-hint: "[vps|docker|uberjar] [--report]"
+description: "Deploy a Biff 2 app to an Ubuntu server with biff.tasks, hot-reload a running deployment, or build an uberjar"
+argument-hint: "[vps|soft|uberjar] [--report]"
 user-invocable: true
 disable-model-invocation: true
 ---
 
 # Deploy a Biff App
 
-Biff supports three deployment paths: a managed Ubuntu VPS (the default), a Docker image, or a standalone uberjar. Run this skill from inside a Biff project.
+Biff 2 deploys with the `biff.tasks` tasks that every starter project includes: `clj -M:run prod-setup` provisions an Ubuntu server once, `clj -M:run deploy` pushes the current git branch to it and restarts the app, and `clj -M:run uberjar` builds a standalone jar for other hosting. Run this skill from inside a Biff 2 project (one whose `deps.edn` has a `:run` alias using `com.biffweb.tasks.app`).
 
 ## Arguments
 
 | Input             | Target                                                                                  |
 |-------------------|-----------------------------------------------------------------------------------------|
-| (no argument)     | VPS path: `server-setup.sh` (first-time provisioning) and `clj -M:dev deploy`           |
+| (no argument)     | VPS path: `clj -M:run prod-setup` (first time only), then `clj -M:run deploy`           |
 | `vps`             | Same as (no argument); explicit selection of the VPS path                               |
-| `docker`          | Build a Docker image from the starter `Dockerfile` with `clj -T:build uber` and `docker build` |
-| `uberjar`         | Build a standalone uberjar with `clj -T:build uber`                                     |
+| `soft`            | `clj -M:run deploy --soft`: push and evaluate changed files in the running app without a restart |
+| `uberjar`         | Build `target/jar/app.jar` with `clj -M:run uberjar`                                    |
 | `all`             | Same as (no argument); accepted for family consistency                                  |
-| `--report`        | Print the planned commands (resolved target host for the VPS path, the `git ls-files` upload manifest, the Docker image tag, or the uberjar output path). Write nothing, run nothing. |
+| `--report`        | Print the planned commands and the facts they depend on (domain, deployment name, branch and worktree state, uploaded untracked files, or the jar path). Write nothing, run nothing. |
 
 This skill operates on deployment-target keywords rather than file paths, so the `<path>` row of the standard scope vocabulary does not apply. The `all` keyword is accepted as a synonym for the default VPS path.
 
 ## Mutation
 
-Mutates by default: deploys to a running production system (VPS path) or writes a Docker image / uberjar artifact (`docker` and `uberjar` paths). The VPS path also asks the operator for confirmation before each remote-touching command, which is layered on top of the standard mutate-on-invoke contract; treat any refusal at that prompt as a stop. With `--report`, the skill prints the planned command sequence for the selected path and writes nothing.
+Mutates by default: provisions a server and deploys to production (VPS and soft paths) or writes a jar under `target/` (uberjar path). The VPS and soft paths also ask the operator for confirmation before each remote-touching command, layered on top of the standard mutate-on-invoke contract; treat any refusal at that prompt as a stop. With `--report`, the skill prints the planned command sequence for the selected path and writes nothing.
 
 ## Steps
 
 Parse `$ARGUMENTS`. Extract `--report` if present (report-only mode). Use the remaining token as the deployment target. If the remaining token is empty or `all`, default to `vps`.
 
-| Argument  | Path |
-|-----------|------|
-| `vps`     | Ubuntu VPS via `server-setup.sh` and `clj -M:dev deploy` |
-| `docker`  | Build a Docker image with the starter `Dockerfile` |
-| `uberjar` | Build a standalone uberjar with `clj -T:build uber` |
+Read the deployment settings from `resources/config.edn` and the local `config.env`:
 
-Under `--report`, do not run any of the commands listed in the path sections below. Instead, resolve `DOMAIN` from `config.env`, print the deployment path, the target host (VPS), the command sequence, and the file list that would be uploaded (`git ls-files` plus any `:biff.tasks/deploy-untracked-files` overrides for the VPS path); print the resolved `docker build` tag and `Dockerfile` location for the Docker path; print the uberjar output path under `target/` for the uberjar path.
+| Setting | Source | Notes |
+|---------|--------|-------|
+| `:biff.tasks/domain` | `DOMAIN` in the local `config.env` | Required. The server is reached as `root@<domain>` for setup and `<deployment-name>@<domain>` afterwards. |
+| `:biff.tasks/deployment-name` | `DEPLOYMENT_NAME`, default in `config.edn` | Linux user, home directory, and systemd service name on the server. |
+| `:biff.tasks/deploy-untracked-files` | `config.edn` | Gitignored files copied after the push; the starter copies the built CSS and uploads `config.prod.env` as the server's `config.env`. |
+| `:biff.tasks/nrepl-port` | `NREPL_PORT`, default 7888 | Used by `prod-nrepl` and `deploy --soft`. |
+
+Under `--report`, do not run any task. Print the selected path, the resolved domain and deployment name, the current branch, whether `git status --porcelain` is empty, whether HEAD is detached, the untracked-file list, and the command sequence below. For the uberjar path, print `target/jar/app.jar` and the `java -jar` command.
 
 ### VPS path (default)
 
 #### Confirm before acting
 
-Every command in this path either touches a remote host or modifies production. Show the user each command and the target host, and wait for confirmation before running it. Treat refusal as a stop.
+Every command in this path touches a remote host or production. Show the user each command and the target host, and wait for confirmation before running it. Treat refusal as a stop.
 
 #### First-time provisioning
 
-1. Confirm `DOMAIN` is set in `config.env` (for example `DOMAIN=example.com`). If `config.env` does not exist, generate it:
+Skip this section when the server already runs the app (ask the user if unsure).
 
-   ```bash
-   clj -M:dev generate-config
-   ```
-
-2. Confirm an A record on the domain points to the target VPS, and that `ssh root@<domain>` succeeds.
-3. Confirm the VPS has at least 1 GB of memory.
+1. Confirm `DOMAIN` is set in the local `config.env` and that an A record for it points to the server.
+2. Confirm `ssh root@<domain>` succeeds. The server should be a fresh Ubuntu machine; the setup script is only tested on Ubuntu.
+3. Confirm `config.prod.env` is filled in for production: `COOKIE_SECRET` (generated by `init`), the MailerSend keys for sign-in email, the Turnstile keys for the captcha, and optionally `ALERT_EMAIL` and `ADMIN_USER_ID`. Production does not set `SKIP_CAPTCHA`, so the captcha check runs and needs both Turnstile keys. Without `MAILERSEND_API_KEY`, the starter's `send-email` prints sign-in codes to the server log instead of emailing them.
 4. Provision:
 
    ```bash
-   scp server-setup.sh root@<domain>:
-   ssh root@<domain> "bash server-setup.sh"
-   ssh root@<domain> "reboot"
+   clj -M:run prod-setup
    ```
 
-5. If `rsync` is not installed locally, add the remote git remote:
+   The script installs packages including a Java runtime, the Clojure CLI, and trenchman; creates the deployment user with root's SSH keys; creates a systemd service running `clj -M:prod` with its own `PORT`; installs Caddy as an HTTPS reverse proxy for the domain; and enables a firewall allowing only SSH, HTTP, and HTTPS. `clj -M:run prod-setup --copy-only` copies the script without running it, for review.
 
-   ```bash
-   git remote add prod ssh://app@<domain>/home/app/repo.git
-   ```
-
-   If the project's default branch is `main`, edit `:biff.tasks/deploy-cmd` in `resources/config.edn`.
+5. After setup, check that the server's Java is version 21 or later (`ssh <deployment-name>@<domain> java -version`). Biff 2.0.1 and later require it, and the Java package installed depends on the Ubuntu release.
 
 #### Deploy
 
-```bash
-clj -M:dev deploy
-clj -M:dev logs
-```
-
-`deploy` uploads (rsync if available, `git push` otherwise) and restarts the app. `logs` tails the server log so the deploy can be verified.
-
-Only files that `git ls-files` reports are uploaded, plus `config.env` and `target/resources/public/css/main.css`. Add overrides under `:biff.tasks/deploy-untracked-files` in `resources/config.edn`.
-
-### Docker path
+Deploy requires a clean worktree and a branch checked out (not a detached HEAD). Check `git status --porcelain` first and stop if it is not empty; ask the user to commit or stash rather than doing either yourself.
 
 ```bash
-clj -T:build uber
-docker build -t <image>:<tag> .
+clj -M:run deploy
 ```
 
-The starter project ships a `Dockerfile`. Push the image to a registry, then run it with the same environment variables that `config.env` defines.
+`deploy` builds minified CSS, force-pushes the current branch to `/home/<deployment-name>/repo` on the server, copies the untracked files, and restarts the service.
+
+### Soft path
+
+```bash
+clj -M:run deploy --soft
+```
+
+Same push and file copy, but instead of restarting, it evaluates the changed files in the running app through nREPL. Use it for code changes that do not touch startup-only code (schema columns, `start-order`, dependencies); otherwise run the VPS path. Confirm before running, as for the VPS path.
 
 ### Uberjar path
 
 ```bash
-clj -T:build uber
+clj -M:run uberjar
 ```
 
-Run with:
+This writes `target/jar/app.jar`. Run it with the production configuration in a `config.env` in the working directory, or with the same variables in the environment:
 
 ```bash
-java -jar target/<app>-standalone.jar
+java -jar target/jar/app.jar
 ```
 
-The runtime reads `config.env` from the working directory.
+The app listens on `PORT` (default 8080) and `HOST` (default `localhost`; set `HOST=0.0.0.0` inside a container). The host must provide Java 21 or later.
 
 ## Post-deploy verification
 
 ```bash
-clj -M:dev logs                       # VPS path: tail server log
-curl -fsS https://<domain>/ -o /dev/null
+clj -M:run prod-logs 100   # follows the service log; stop it once startup is confirmed
+curl -fsS -o /dev/null https://<domain>/
 ```
 
-Report a successful deploy only after the smoke check passes.
+`prod-logs` runs `journalctl -f` over SSH and does not exit on its own; run it with a timeout or in the background and stop it after reading the startup lines. Report a successful deploy only after the curl check passes. `clj -M:run prod-restart` restarts the service, and `clj -M:run prod-nrepl` opens an SSH tunnel to the production nREPL.
 
 ## Gotchas
 
-- **Never run `server-setup.sh` against a live server without explicit confirmation from the user.** It is intended for a fresh Ubuntu VPS.
-- **Update `server-setup.sh` whenever a server package or configuration changes.** The script is the only path to reprovisioning a server from scratch.
-- **Standalone XTDB topology has no built-in backups and cannot run on more than one server.** For production data, point XTDB at a managed Postgres via `config.env`.
-- **`clj -M:dev prod-dev` evaluates local changes against the running production system.** Use it deliberately; it is not a sandbox.
-- **`clj -M:dev deploy` ignores untracked files.** Anything not in `git ls-files` (other than `config.env` and the generated Tailwind CSS) will not appear on the server unless listed under `:biff.tasks/deploy-untracked-files`.
+- **Never run `prod-setup` against a server already serving other things without explicit confirmation.** It upgrades packages, rewrites the firewall, and configures Caddy.
+- **`deploy` force-pushes.** Whatever branch is checked out locally replaces the server's copy; there is no branch setting.
+- **Only committed files and `deploy-untracked-files` reach the server.** A new gitignored file the app needs at runtime must be added to `:biff.tasks/deploy-untracked-files`.
+- **`DOMAIN` belongs in the local `config.env`.** The deploy tasks run on the developer's machine and read the domain there; the server's `config.env` comes from `config.prod.env`.
+- **Several apps can share one server** when each uses a different `DEPLOYMENT_NAME` and domain; `prod-setup` assigns each its own port.
+- **The starter `Dockerfile` is outside this skill.** Its build stage calls `clj -M:dev uberjar`, but the starter defines no `:dev` alias; `clj -M:run uberjar` is the working command if the user maintains a Docker build.
+- **Production data lives in SQLite on the server's disk.** Configure Litestream (`:biff.sqlite/litestream-*` keys) before relying on the server for real data.

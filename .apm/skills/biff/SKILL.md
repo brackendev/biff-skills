@@ -1,156 +1,148 @@
 ---
 name: biff
 description: >-
-  Use when writing, editing, reviewing, or discussing Biff web applications.
-  Triggers: com.biffweb namespace, biff/submit-tx, biff/q, biff/lookup,
-  biff/lookup-id, biff/form, doc-schema, :db/doc-type, :db/op, :db.id/* keyword
-  ids, :db/now, resources/config.edn, config.env, dev/repl.clj, dev/tasks.clj,
-  src/com/*/app.clj, home.clj, worker.clj, schema.clj, hx-* htmx attributes in
-  Clojure code, use-jetty, use-xtdb, use-chime, use-beholder, use-xtdb-tx-listener,
-  biff/submit-job, biff/submit-job-for-result, biff/authentication-module,
-  biff/wrap-render-rum, biff/add-seconds, clj -M:dev dev, clj -M:dev deploy,
-  clj -M:dev logs, clj -M:dev generate-config, server-setup.sh, fixtures.edn,
-  or any mention of Biff or biffweb. Covers the module + system-map architecture,
-  project layout, routes, XTDB transactions with Malli schema, queries, htmx
-  patterns, authentication, scheduled tasks, transaction listeners, queues, and
-  REPL workflow.
+  Use when writing, editing, reviewing, or discussing Biff 2 web applications.
+  Triggers: com.biffweb.* namespaces (core, config, fx, graph, sqlite, ring,
+  datastar, background, authenticate, admin, tasks), biff.core/start,
+  :biff.core/id, :biff.core/init, start-order, modules.clj, defpipeline,
+  defmachine, defresolver, :biff.graph.fx/query, :biff.sqlite.fx/execute,
+  authorized-write, defpath, :biff.ring/routes, biff.datastar, signals-json,
+  signal-name, data-on: and @post( attributes in Clojure code,
+  :biff.datastar/tab-id, :biff.background/tasks, :biff.background/queues,
+  submit-jobs, biff.auth/module, resources/schema.sql, resources/config.edn,
+  config.env, config.prod.env, #biff/env, #biff/secret, repl.clj,
+  clj -M:run dev, clj -M:run code-quality, clj -M:run deploy,
+  clj -M:run prod-setup, agent-refresh, biff-starter, or any mention of Biff or
+  biffweb. Covers the biff.core module system, project layout, Reitit routes
+  via biff.ring, biff.fx effects, biff.graph resolvers, SQLite schema and
+  authorized writes, Datastar pages and actions, authentication, background
+  jobs, and the task workflow.
 user-invocable: false
 ---
 
 # Biff
 
-Biff is a Clojure web framework that bundles XTDB (with Malli schema enforcement), htmx with hyperscript, passwordless email authentication, a module-plus-system-map architecture, live REPL with file-watch, and Ubuntu VPS / Docker / uberjar deployment. It targets solo developers and small teams.
+Biff 2 is a Clojure web framework built as a set of independent libraries under `com.biffweb/*`: `biff.core` (module system), `biff.config` (Aero config), `biff.fx` (effects as data), `biff.graph` (resolver graph), `biff.sqlite` (default database), `biff.ring` (Reitit, Jetty, middleware), `biff.datastar` (server-rendered reactive UI), `biff.background` (scheduled tasks and in-memory queues), `biff.authenticate` (email sign-in codes), `biff.admin` (dashboard), and the dev-only `biff.run` / `biff.tasks` task runner. `com.biffweb/defaults` bundles everything except `run` and `tasks`; `biff.xtdb` (XTDB 2) is an optional alternative to SQLite. Projects start from the `jacobobryant/biff-starter` repository. Java 21 or later is required.
 
-This skill covers Biff-specific conventions. For general Clojure style, follow the `clojure` skill from the companion [clojure-skills](https://github.com/brackendev/clojure-skills) package. Run the shared quality pipeline via `/clj-fix` from that package; pass `dev` as a lint path so the Biff `dev/repl.clj` and `dev/tasks.clj` helpers are covered. There is no Biff-specific check command -- the underlying Clojure tooling is identical.
+This skill covers only what Biff changes. Follow the `clojure` skill from [clojure-skills](https://github.com/brackendev/clojure-skills) for general style (naming, namespaces, `defn-`, threading, Malli at boundaries, testing) and the `clojure-jvm` skill from [clojure-jvm-skills](https://github.com/brackendev/clojure-jvm-skills) for Java interop, JVM exceptions, nREPL, clj-kondo, cljfmt, and tools.build. For design-philosophy reviews, the `biff-lenses` skill layers Biff deltas onto `clojure-lenses`.
 
 ## Project Layout
 
-Biff projects use a `com.<organization>.<app>` namespace under `src/com/`. A new project with `com.example` as the main namespace looks like:
+The starter project (main namespace `com.example`, renamed by `clj -M:run init`) looks like this:
 
 ```
-├── Dockerfile
-├── README.md
-├── cljfmt-indents.edn
-├── deps.edn
-├── dev
-│   ├── repl.clj                  REPL helpers and notes
-│   └── tasks.clj                 clj -M:dev <task> commands
+├── deps.edn                     :run alias (tasks) and :prod alias (server)
+├── repl.clj                     REPL scratch space: get-ctx, refresh
+├── tests.edn                    Kaocha configuration
+├── AGENTS.md                    agent workflow (agent-refresh, code-quality)
 ├── resources
-│   ├── config.edn                public configuration (committed)
-│   ├── config.template.env       generator for config.env
-│   ├── fixtures.edn              dev seed data
-│   ├── public/                   static assets served as-is
-│   ├── tailwind.config.js
-│   └── tailwind.css
-├── server-setup.sh               Ubuntu VPS provisioning script
-├── src
-│   └── com
-│       ├── example
-│       │   ├── app.clj           routes and handlers
-│       │   ├── email.clj
-│       │   ├── home.clj
-│       │   ├── middleware.clj
-│       │   ├── schema.clj        Malli schema
-│       │   ├── settings.clj
-│       │   ├── ui.clj
-│       │   └── worker.clj
-│       └── example.clj           entrypoint
-└── test
-    └── com
-        └── example_test.clj
+│   ├── config.edn               all config, committed; uses #biff/env and #biff/secret
+│   ├── TEMPLATE.config.env      template for config.env (dev values)
+│   ├── TEMPLATE.config.prod.env template for config.prod.env (uploaded as the server's config.env)
+│   ├── schema.sql               generated from schema.clj; do not edit
+│   ├── tailwind.css
+│   └── public/js/main.js
+├── src/com
+│   ├── example.clj              entry point: system atom, start, stop, -main
+│   └── example
+│       ├── modules.clj          the modules vector and start-order
+│       ├── routes.clj           shared defpath definitions
+│       ├── schema.clj           SQLite columns map and authorization rules
+│       ├── app/                 user-facing modules (routes and handlers)
+│       ├── model/               data-model modules (biff.graph resolvers, sqlite module)
+│       └── lib/                 shared functions (ui, middleware, email)
+└── test/com/example_test.clj
 ```
 
-`resources/config.edn` holds public configuration and is committed. `config.env` holds secrets and is gitignored; generate it with `clj -M:dev generate-config` (or by running `clj -M:dev dev` once, which generates it on demand).
+`config.env` and `config.prod.env` hold secrets and are gitignored; `clj -M:run init` (run automatically by `dev`) generates them from the templates.
 
-## Modules and the system map
+Module placement rules from the starter README: files that define biff.core modules live only in module folders (`app/`, `model/`, and any you add, such as `work/` for background jobs, `api/` for external API routes, or `ui_components/` for resolvers that return hiccup). Only `modules.clj` requires module namespaces. Module namespaces never require each other. Shared code goes in `lib/`.
 
-A module is a plain map. Any of these keys are recognized:
+## Modules and the System Map
 
-```clojure
-(def module
-  {:static     {...}     ; static HTML routes (path -> Rum data)
-   :routes     [...]     ; CSRF-protected routes
-   :api-routes [...]     ; CSRF-disabled routes (public APIs)
-   :schema     {...}     ; Malli schema fragments
-   :tasks      [...]     ; chime scheduled tasks
-   :on-tx      (fn ...)  ; XTDB transaction listener
-   :queues     [...]})   ; in-memory concurrent queues
-```
-
-Modules are bundled in the system map:
+A module is a map. Library modules are created by calling a function; application modules are plain `(def module {...})` maps referenced from `modules.clj`:
 
 ```clojure
 (def modules
-  [app/module
-   (biff/authentication-module {})
-   home/module
-   schema/module
-   worker/module])
+  [{:biff.core/init {:biff.ring/on-error #'lib.ui/on-error}}
+   (biff.config/module)
+   (biff.ring/module)
+   (biff.datastar/module)
+   (biff.background/module)
+   (biff.fx/module)
+   (biff.graph/module)
+   model.user/module
+   model.sqlite/module
+   model.tab/module
+   app.admin/module
+   app.landing/module
+   app.auth/module
+   app.demo/module])
 
-(def initial-system {:biff/modules #'modules ...})
+(def start-order
+  [:biff.config/module
+   :biff.sqlite/module
+   :biff.admin/module
+   :biff.background/module
+   :biff.ring/module])
+
+(defonce system (atom {}))
+
+(defn start []
+  (reset! system (biff.core/start #'modules start-order)))
 ```
 
-The system map flows through a sequence of components. Each component is a function `(system) -> system'`:
-
-```clojure
-(def components
-  [biff/use-config
-   biff/use-secrets
-   biff/use-xtdb
-   biff/use-queues
-   biff/use-xtdb-tx-listener
-   biff/use-jetty
-   biff/use-chime
-   biff/use-beholder])
-```
-
-After all components run, the system is live. Handlers receive the system map merged with the Ring request as a context map (`ctx`), so resources like `:biff.xtdb/node` and `:biff/db` are available:
-
-```clojure
-(defn hello [{:keys [biff/db] :as ctx}]
-  (let [n-users (ffirst (xt/q db '{:find [(count user)]
-                                   :where [[user :user/email]]}))]
-    [:html [:body [:p "There are " n-users " users."]]]))
-
-(def module {:routes [["/hello" {:get hello}]]})
-```
-
-Prefer `ctx` over `req` in handler signatures; the context map carries more than just the Ring request.
+- `:biff.core/init` is a map, or a function of the modules var, whose result is merged into the system map. Init-only modules (`biff.fx/module`, `biff.graph/module`, `biff.datastar/module`, and most application modules) never appear in `start-order`.
+- A module with `:biff.core/start` must have a `:biff.core/id`, and that id must appear in `start-order`. `:biff.core/stop` receives what its own start returned; stops run in reverse order.
+- Libraries collect keys from every module: `:biff.ring/routes`, `:biff.graph/resolvers`, `:biff.fx/handlers`, `:biff.sqlite/columns`, `:biff.background/tasks`, `:biff.background/queues`, and `:biff.core/on-tx`.
+- Handlers receive the whole system map merged with the Ring request. The starter names that argument `request` or `ctx`.
 
 ## Key Rules
 
-1. **Prefer Biff helpers over the underlying library.** Use `biff/submit-tx` over `xt/submit-tx`, `biff/q` over `xt/q`, `biff/lookup` / `lookup-id` over hand-rolled `xt/pull` lookups, and `biff/form` over hand-rolled CSRF token markup. The helpers enforce schema, await transactions, throw on misuse, and accept `ctx` directly.
-2. **Tag every Biff transaction document with `:db/doc-type`.** Schema enforcement runs only when this key is present. A transaction that bypasses it can corrupt invariants silently.
-3. **Choose `:db/op` deliberately.** The default is `:xtdb.api/put`, which replaces the whole document. Use `:db/op :merge` to create-or-merge and `:db/op :update` when the document must already exist. Use `:db/op :delete` to delete.
-4. **Use `:db/now` and `:db.id/<name>` sentinels in transactions.** `:db/now` becomes `(java.util.Date.)`. Any `:db.id/foo` keyword becomes a fresh random UUID; reuse the same `:db.id/foo` within a transaction to link new documents together.
-5. **Pass a function to `biff/submit-tx` when contention is possible.** Biff retries on contention up to three times. With a function (rather than a vector), the function is re-invoked between retries with a fresh `:biff/db`. This is required for any read-then-write pattern.
-6. **Use `:api-routes` for public JSON APIs.** Only `:api-routes` disables CSRF. Anything under `:routes` requires the anti-forgery token and is intended for browser sessions.
-7. **Attach middleware via the Reitit `{:middleware [...]}` route data.** Per-route middleware composes correctly with Biff's late binding. Wrapping the top-level handler defeats live-evaluation of route-local middleware.
-8. **Return Rum vectors directly from handlers.** Biff's `wrap-render-rum` middleware renders `[:html ...]` and other Rum vectors to HTML. Do not call `rum/render-static-markup` manually inside a handler.
-9. **Use `biff/form` for every POST form.** It injects the CSRF token (`__anti-forgery-token`) and a couple of other conveniences. Manual hidden inputs are allowed but easier to forget.
-10. **For htmx responses, return a partial vector, not a full HTML document.** htmx swaps the response into the page via `hx-swap` attributes; returning a full `[:html ...]` document inside a swap target produces nested `<html>` tags.
-11. **Use schema aliases for foreign keys.** Define `:user/id :uuid` and reference `:user/id` from `:msg/user`. Biff does not enforce referential integrity, but the alias makes intent obvious to readers and to other tooling.
-12. **Use late binding (`#'var`) in modules and component lists.** This is what lets `clj -M:dev dev` pick up file-save evaluations without restarting the system.
-13. **Reserve `(refresh)` for component or system-map changes.** Most edits do not need it. Calling `refresh` stops every cleanup function in `:biff/stop`, then runs `clojure.tools.namespace.repl/refresh :after start`.
-14. **Push long-running work behind `:queues` or `:tasks`, not into a request handler.** Queues bound concurrency for fan-out; chime tasks run on a schedule. Queues are in-memory and not persisted, and there is no retry for jobs that throw -- jobs that must survive a restart need a different mechanism.
-15. **For real-time fan-out across users, broadcast from an `:on-tx` listener.** Calling `jetty/send!` directly from a request handler only reaches clients connected to the same JVM. Routing the broadcast through a transaction listener fans out reliably.
+1. **Keep module namespaces isolated.** Each exposes a single `module` map. Put shared helpers in `lib/` and shared paths in `routes.clj`, never in another module namespace.
+2. **Reference functions and the modules vector as vars.** Use `#'modules` in `biff.core/start` and `#'fn` for functions stored in module or config maps so that file-save evaluation takes effect without a restart.
+3. **Read configuration from the system map.** Never read environment variables or the global `system` atom from application code; the atom is for the REPL only. Declare values in `resources/config.edn` with `#biff/env` and wrap secrets with `#biff/secret`, then unwrap them with `force` (nil-safe), not `@`.
+4. **Build every URL with `defpath`.** Call the path function with no arguments in the Reitit route vector and with arguments for `:href` and `:action`. UUID path parameters are encoded and decoded automatically.
+5. **Write handlers as `defpipeline` or `defmachine`.** State functions stay pure and return effect descriptors such as `[:biff.sqlite.fx/execute {...}]`. Put effects whose result is not needed under an underscore-prefixed key (`:_`), and use `:biff.fx/seq` when effect order matters.
+6. **Route user-initiated writes through `authorized-write`.** Use the `:biff.sqlite.fx/authorized-write` effect so the `authorize` function in `schema.clj` checks the diff. Use plain `execute` only for system writes such as background jobs.
+7. **Authorize reads with biff.graph resolvers.** biff.sqlite has no read authorization. Use "params" resolvers that return an entity only when the current user may read it.
+8. **Render each page from one handler.** Wrap content in `ui/app-page`, which returns only the `#biff-datastar-content` element when `:biff.datastar/sse-request` is true. Datastar re-renders the page over SSE after every database write.
+9. **Return 204 from Datastar actions.** Action handlers update state and return `{:status 204}` (or `patch-signals` to change client signals). They do not render HTML.
+10. **Bind form inputs to namespaced signals.** Initialize signals with `:data-signals__ifmissing` and `signals-json`, bind with `signal-name`, and read them from `:biff.datastar/signals`. Avoid signals for anything other than form inputs; store UI state the render needs in tab state keyed by `:biff.datastar/tab-id`.
+11. **Keep page rendering fast.** Every write re-renders open pages. Move expensive queries into an action that stores results in tab state.
+12. **Change the data model in `schema.clj`.** Edit the `columns` map; Biff regenerates `resources/schema.sql` and sqldef migrates on startup. Run `(refresh)` from `repl.clj` after schema or start-order changes.
+13. **Query through biff.graph where the data model is involved.** Biff generates one batch resolver per table from `columns`. Add derived-data and session resolvers under `model/`, and request data with `[:biff.graph.fx/query ...]` as a pipeline's initial effect.
+14. **Use `biff.background` for scheduled and queued work.** Declare `:biff.background/tasks` and `:biff.background/queues` in a module and submit with `submit-jobs` or the `:biff.background.fx/submit-jobs` effect. Jobs are in memory only.
+15. **Run `clj -M:run code-quality` before finishing.** It updates clj-kondo configs, formats, lints, and tests. The starter CI fails when formatting would change files. While the app runs, agents can evaluate changes, lint, and test with `trench -p $(cat .nrepl-port) -e "((requiring-resolve 'com.biffweb.tasks/agent-refresh))"`.
+
+`/clj-fix` from clojure-skills calls `clj -M:cljfmt`, `clj -X:test`, and `clj -M:dry4clj`, which the starter's `deps.edn` does not define (it has only `:run` and `:prod`). Use `clj -M:run code-quality`, `clj -M:run format`, `clj -M:run lint`, and `clj -M:run test` instead. Biff's `format` task also inserts blank lines between multi-line pairs before running cljfmt, so formatting with plain cljfmt produces different output.
 
 ## References
 
 Detailed patterns live in `references/biff-reference.md`. Load it when working on:
 
-- Routes, middleware, htmx responses, out-of-band swaps
-- Schema design, `biff/submit-tx`, transaction functions, `biff/q`, `lookup` helpers
-- The authentication module, sessions, role-based authorization, CSRF, secret rotation
-- Modules, components, the system map, scheduled tasks, transaction listeners, queues, REPL workflow
+- Configuration, secrets, and environment files
+- Routes, `defpath`, the default middleware stack, CSRF, and sessions
+- Datastar pages, signals, actions, and tab state
+- biff.fx machines and pipelines, and testing them
+- biff.graph resolvers and queries
+- SQLite columns, migrations, queries, authorized writes, transactions, and Litestream
+- Background tasks and queues, authentication, the admin dashboard
+- Project tasks, the REPL workflow, custom tasks, and the XTDB 2 alternative
 
 ## Gotchas
 
-- **`config.env` is not generated until the first `clj -M:dev dev` run.** Fresh checkouts of a Biff project will fail config loading until `clj -M:dev generate-config` (or `dev`, which auto-generates) runs once.
-- **Tests run automatically on file save during `clj -M:dev dev`.** A failing test you haven't written yet will spam the dev log; triage at the source rather than disabling.
-- **htmx pages need the htmx `<script>` in `<head>` once.** Forgetting it makes `hx-*` attributes inert with no error.
-- **WebSocket fan-out from a request handler only reaches clients on the same JVM.** Push fan-out into an `:on-tx` listener.
-- **`server-setup.sh` is project-local.** Edits to install additional system packages belong in this script so the server stays reprovisionable from scratch.
-- **`clj -M:dev deploy` only uploads files tracked by `git ls-files`** (plus `config.env` and `target/resources/public/css/main.css`). Add overrides under `:biff.tasks/deploy-untracked-files` in `resources/config.edn`.
-- **`clj -M:dev prod-dev` evaluates local changes against the running production system.** Use it deliberately; it is not a sandbox.
-- **Standalone XTDB topology has no built-in backups and cannot run on more than one server.** For production data, point XTDB at a managed Postgres via `config.env`.
+- **Java 21 is the minimum.** Biff 2.0.1 raised it from 17; the starter README still says 17. `biff.xtdb` additionally requires Java earlier than 25 and extra JVM options.
+- **`defpipe`, `pipe`, and `:biff.fx/test` do not exist.** The changelog and release notes mention them, but the code provides `pipeline` / `defpipeline`, and tests call a machine or pipeline with no arguments to get its state functions.
+- **SQLite column types are `:int :real :text :boolean :inst :uuid :enum :edn :blob`.** The biff.sqlite README example uses `:string`, which fails validation.
+- **Destructive migrations are skipped silently.** Removing or retyping a column leaves the old column in place. Apply drops by hand with `target/bin/sqlite3def storage/sqlite/main.db --apply --enable-drop -f resources/schema.sql` after startup regenerates `schema.sql`.
+- **Do not edit `resources/schema.sql`.** It is regenerated from `columns`; extra SQL such as multi-column indexes belongs in `extra-init-sql` in `schema.clj`.
+- **SSE re-render requests must return only the wrapper element.** Returning a full document when `:biff.datastar/sse-request` is true nests `<html>` inside the page.
+- **Signals without `__ifmissing` are overwritten** on every server push, which erases what the user is typing.
+- **Background jobs are not persisted and are not retried.** A consumer that throws logs the error and drops the job. Queues default to one thread (the schema doc's "10" is stale). Tasks and queues are read only at startup.
+- **`:biff.background/job` is the job key.** The biff.background README destructures `{:biff.background/queues [job]}`, which is wrong; use `{:biff.background/keys [job queue]}`.
+- **A missing `COOKIE_SECRET` makes sessions fall back to memory.** Sessions then vanish on every restart; `init` generates the secret into both env files.
+- **CSRF protection is header based.** biff.ring rejects state-changing requests that carry neither `Sec-Fetch-Site` nor `Origin` (scripts and `curl` get 403). No token is needed in forms; the starter sets `:biff.auth/skip-csrf-protection true` for the same reason.
+- **`init` can replace git history.** Answering yes to its prompt deletes `.git` and creates a fresh repository with one commit.
+- **Deploy requires a clean worktree and force-pushes.** `clj -M:run deploy` refuses uncommitted changes or a detached HEAD, and it force-pushes the current branch to the server.
+- **The starter `Dockerfile` build stage calls `clj -M:dev uberjar`,** but `deps.edn` has no `:dev` alias. The working command is `clj -M:run uberjar`, which writes `target/jar/app.jar`.

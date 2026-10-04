@@ -6,6 +6,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-04
+
+### Breaking
+
+- Every skill now targets Biff 2 (written against Biff 2.0.2 and the `biff-starter` project) and no longer describes Biff 1.x. Biff 2 replaces the single `com.biffweb` namespace with separate libraries, makes SQLite the default database, replaces htmx with Datastar, and moves project tasks from `clj -M:dev` to `clj -M:run`. Projects that still run Biff 1.x should stay on release 0.1.11 of this package.
+- Java 21 is now the minimum, matching Biff 2.0.1 and later.
+
+### Changed
+
+- The `biff` skill and its reference now cover the `biff.core` module system and start order, the starter's `app/`, `model/`, and `lib/` layout, Reitit routes and `defpath` through `biff.ring`, effects as data with `biff.fx`, `biff.graph` resolvers, SQLite columns, migrations, and authorized writes through `biff.sqlite`, Datastar pages, actions, and tab state, `biff.background` tasks and queues, `biff.authenticate`, `biff.admin`, the `clj -M:run` task workflow, and XTDB 2 through `biff.xtdb` as an alternative database. The skill also lists places where the upstream documentation and code disagree.
+- `/biff-new` now clones the official `biff-starter` repository and runs `clj -M:run init` with the confirmed namespace and git-history choice, then verifies that `clj -M:run dev` serves the app. It also documents how to recover when macOS rejects the downloaded Tailwind binary.
+- `/biff-deploy` now uses the Biff 2 tasks: `clj -M:run prod-setup` to provision an Ubuntu server, `clj -M:run deploy` to push the current branch and restart, and `clj -M:run uberjar` to build `target/jar/app.jar`. A new `soft` mode runs `clj -M:run deploy --soft`, which evaluates changed files in the running app without a restart.
+- The `biff-lenses` skill now translates the code-lenses philosophies into Biff 2 patterns. It leaves the general Clojure translations to `clojure-lenses` instead of restating them.
+- The `biff` skill now points format, lint, and test work to `clj -M:run code-quality`, because `/clj-fix` from `clojure-skills` expects aliases that Biff 2 projects do not define.
+
+### Removed
+
+- The `docker` mode of `/biff-deploy` is removed. Biff 2 has no Docker support, and the starter's `Dockerfile` calls a `:dev` alias that the starter does not define.
+
 ## [0.1.11] - 2026-09-26
 
 ### Fixed

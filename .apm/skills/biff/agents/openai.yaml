@@ -1,6 +1,6 @@
 interface:
   display_name: "Biff"
-  short_description: "Biff web framework conventions: modules, XTDB transactions, htmx, auth, deployment."
+  short_description: "Biff 2 web framework conventions: biff.core modules, biff.fx effects, biff.graph resolvers, SQLite, Datastar, auth, tasks."
   default_prompt: "Review this Biff code for idiomatic framework usage."
   brand_color: "#4338CA"
 

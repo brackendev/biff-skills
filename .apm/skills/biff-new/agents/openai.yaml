@@ -1,6 +1,6 @@
 interface:
   display_name: "Biff New"
-  short_description: "Scaffold a new Biff web application."
+  short_description: "Scaffold a new Biff 2 web application from the official starter."
   default_prompt: "Run /biff-new my-app."
   brand_color: "#4338CA"
 
