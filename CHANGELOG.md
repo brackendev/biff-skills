@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.2.4] - 2026-10-24
+
+### Changed
+
+- The `biff` skill's Key Rules carry the symptoms that its Gotchas repeated: a full document returned for an SSE re-render nests `<html>` inside the page, signals without `__ifmissing` erase what the user is typing, extra SQL belongs in `extra-init-sql`, and background jobs are not persisted or retried. `/biff-deploy` and `/biff-new` fold the Gotchas that repeated their steps into those steps.
+
 ## [0.2.3] - 2026-10-24
 
 ### Removed

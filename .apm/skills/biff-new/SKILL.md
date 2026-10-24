@@ -59,7 +59,7 @@ cd <project-dir>
 printf '%s\n%s\n' '<namespace>' '<Y-or-n>' | clj -M:run init
 ```
 
-`init` renames `com.example` in every tracked file, moves `src/com/example*` and `test/com/example_test.clj` to the new path (hyphens become underscores), and updates `:biff.tasks/main-ns` in `resources/config.edn`. With `Y`, it deletes `.git`, runs `git init`, and commits everything as "First commit".
+`init` renames `com.example` in every tracked file, moves `src/com/example*` and `test/com/example_test.clj` to the new path, and updates `:biff.tasks/main-ns` in `resources/config.edn`. The namespace keeps hyphens (`com.my-app`) and the directory path uses underscores (`src/com/my_app/`). `init` writes both shapes, so do not rename either by hand. With `Y`, it deletes `.git`, runs `git init`, and commits everything as "First commit".
 
 If `init` fails with `Failed to install correct version of binary` for `tailwindcss`, check whether macOS killed the downloaded binary:
 
@@ -116,8 +116,6 @@ Read AGENTS.md for the agent workflow (agent-refresh and code-quality).
 
 ## Gotchas
 
-- **`init` is interactive.** Do not pipe answers you have not confirmed with the user. Answering yes to the git prompt deletes the cloned history.
 - **`clj -M:run dev` runs `init` itself when needed.** Running `dev` first on a fresh clone prompts for the namespace inside the long-running dev process; run `init` first so the prompts finish before the server starts.
 - **`config.env` and `config.prod.env` are gitignored.** Fresh clones of the new project need `clj -M:run init` (or `dev`) to generate them.
-- **Namespace and directory naming.** The namespace uses hyphens (`com.my-app`) and the directory path uses underscores (`src/com/my_app/`). `init` handles this; do not rename either by hand.
 - **Generated files live under `target/` and `storage/`.** CSS builds to `target/resources/public/css/main.css` and the SQLite database lives at `storage/sqlite/main.db`; both are gitignored.

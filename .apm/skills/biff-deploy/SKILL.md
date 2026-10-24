@@ -21,7 +21,7 @@ Biff 2 deploys with the `biff.tasks` tasks that every starter project includes: 
 | `all`             | Same as (no argument); accepted for family consistency                                  |
 | `--report`        | Print the planned commands and the facts they depend on (domain, deployment name, branch and worktree state, uploaded untracked files, or the jar path). Write nothing, run nothing. |
 
-This skill operates on deployment-target keywords rather than file paths, so the `<path>` row of the standard scope vocabulary does not apply. The `all` keyword is accepted as a synonym for the default VPS path.
+This skill operates on deployment-target keywords rather than file paths, so the `<path>` row of the standard scope vocabulary does not apply.
 
 ## Mutation
 
@@ -35,9 +35,9 @@ Read the deployment settings from `resources/config.edn` and the local `config.e
 
 | Setting | Source | Notes |
 |---------|--------|-------|
-| `:biff.tasks/domain` | `DOMAIN` in the local `config.env` | Required. The server is reached as `root@<domain>` for setup and `<deployment-name>@<domain>` afterwards. |
+| `:biff.tasks/domain` | `DOMAIN` in the local `config.env` | Required. The deploy tasks run on the developer's machine and read the domain there, so it does not go in `config.prod.env`. The server is reached as `root@<domain>` for setup and `<deployment-name>@<domain>` afterwards. |
 | `:biff.tasks/deployment-name` | `DEPLOYMENT_NAME`, default in `config.edn` | Linux user, home directory, and systemd service name on the server. |
-| `:biff.tasks/deploy-untracked-files` | `config.edn` | Gitignored files copied after the push; the starter copies the built CSS and uploads `config.prod.env` as the server's `config.env`. |
+| `:biff.tasks/deploy-untracked-files` | `config.edn` | Gitignored files copied after the push. Only committed files and the files listed in this setting reach the server, so add any new gitignored file the app needs at runtime here. The starter copies the built CSS and uploads `config.prod.env` as the server's `config.env`. |
 | `:biff.tasks/nrepl-port` | `NREPL_PORT`, default 7888 | Used by `prod-nrepl` and `deploy --soft`. |
 
 Under `--report`, do not run any task. Print the selected path, the resolved domain and deployment name, the current branch, whether `git status --porcelain` is empty, whether HEAD is detached, the untracked-file list, and the command sequence below. For the uberjar path, print `target/jar/app.jar` and the `java -jar` command.
@@ -73,7 +73,7 @@ Deploy requires a clean worktree and a branch checked out (not a detached HEAD).
 clj -M:run deploy
 ```
 
-`deploy` builds minified CSS, force-pushes the current branch to `/home/<deployment-name>/repo` on the server, copies the untracked files, and restarts the service.
+`deploy` builds minified CSS, force-pushes the current branch to `/home/<deployment-name>/repo` on the server, copies the untracked files, and restarts the service. The force-push replaces the server's copy with whatever branch is checked out locally. There is no branch setting.
 
 ### Soft path
 
@@ -109,9 +109,6 @@ curl -fsS -o /dev/null https://<domain>/
 ## Gotchas
 
 - **Never run `prod-setup` against a server already serving other things without explicit confirmation.** It upgrades packages, rewrites the firewall, and configures Caddy.
-- **`deploy` force-pushes.** Whatever branch is checked out locally replaces the server's copy; there is no branch setting.
-- **Only committed files and `deploy-untracked-files` reach the server.** A new gitignored file the app needs at runtime must be added to `:biff.tasks/deploy-untracked-files`.
-- **`DOMAIN` belongs in the local `config.env`.** The deploy tasks run on the developer's machine and read the domain there; the server's `config.env` comes from `config.prod.env`.
 - **Several apps can share one server** when each uses a different `DEPLOYMENT_NAME` and domain; `prod-setup` assigns each its own port.
 - **The starter `Dockerfile` is outside this skill.** Its build stage calls `clj -M:dev uberjar`, but the starter defines no `:dev` alias; `clj -M:run uberjar` is the working command if the user maintains a Docker build.
 - **Production data lives in SQLite on the server's disk.** Configure Litestream (`:biff.sqlite/litestream-*` keys) before relying on the server for real data.

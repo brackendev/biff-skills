@@ -56,7 +56,7 @@ The starter project (main namespace `com.example`, renamed by `clj -M:run init`)
 
 `config.env` and `config.prod.env` hold secrets and are gitignored; `clj -M:run init` (run automatically by `dev`) generates them from the templates.
 
-Module placement rules from the starter README: files that define biff.core modules live only in module folders (`app/`, `model/`, and any you add, such as `work/` for background jobs, `api/` for external API routes, or `ui_components/` for resolvers that return hiccup). Only `modules.clj` requires module namespaces. Module namespaces never require each other. Shared code goes in `lib/`.
+The starter README places files that define biff.core modules only in module folders (`app/`, `model/`, and any you add, such as `work/` for background jobs, `api/` for external API routes, or `ui_components/` for resolvers that return hiccup). Key Rule 1 covers how module namespaces depend on each other.
 
 ## Modules and the System Map
 
@@ -99,20 +99,20 @@ A module is a map. Library modules are created by calling a function; applicatio
 
 ## Key Rules
 
-1. **Keep module namespaces isolated.** Each exposes a single `module` map. Put shared helpers in `lib/` and shared paths in `routes.clj`, never in another module namespace.
+1. **Keep module namespaces isolated.** Each exposes a single `module` map. Only `modules.clj` requires module namespaces, and module namespaces never require each other. Put shared helpers in `lib/` and shared paths in `routes.clj`, never in another module namespace.
 2. **Reference functions and the modules vector as vars.** Use `#'modules` in `biff.core/start` and `#'fn` for functions stored in module or config maps so that file-save evaluation takes effect without a restart.
 3. **Read configuration from the system map.** Never read environment variables or the global `system` atom from application code; the atom is for the REPL only. Declare values in `resources/config.edn` with `#biff/env` and wrap secrets with `#biff/secret`, then unwrap them with `force` (nil-safe), not `@`.
 4. **Build every URL with `defpath`.** Call the path function with no arguments in the Reitit route vector and with arguments for `:href` and `:action`. UUID path parameters are encoded and decoded automatically.
 5. **Write handlers as `defpipeline` or `defmachine`.** State functions stay pure and return effect descriptors such as `[:biff.sqlite.fx/execute {...}]`. Put effects whose result is not needed under an underscore-prefixed key (`:_`), and use `:biff.fx/seq` when effect order matters.
 6. **Route user-initiated writes through `authorized-write`.** Use the `:biff.sqlite.fx/authorized-write` effect so the `authorize` function in `schema.clj` checks the diff. Use plain `execute` only for system writes such as background jobs.
 7. **Authorize reads with biff.graph resolvers.** biff.sqlite has no read authorization. Use "params" resolvers that return an entity only when the current user may read it.
-8. **Render each page from one handler.** Wrap content in `ui/app-page`, which returns only the `#biff-datastar-content` element when `:biff.datastar/sse-request` is true. Datastar re-renders the page over SSE after every database write.
+8. **Render each page from one handler.** Wrap content in `ui/app-page`, which returns only the `#biff-datastar-content` element when `:biff.datastar/sse-request` is true. Returning a full document on those requests nests `<html>` inside the page. Datastar re-renders the page over SSE after every database write.
 9. **Return 204 from Datastar actions.** Action handlers update state and return `{:status 204}` (or `patch-signals` to change client signals). They do not render HTML.
-10. **Bind form inputs to namespaced signals.** Initialize signals with `:data-signals__ifmissing` and `signals-json`, bind with `signal-name`, and read them from `:biff.datastar/signals`. Avoid signals for anything other than form inputs; store UI state the render needs in tab state keyed by `:biff.datastar/tab-id`.
+10. **Bind form inputs to namespaced signals.** Initialize signals with `:data-signals__ifmissing` and `signals-json`, bind with `signal-name`, and read them from `:biff.datastar/signals`. Without `__ifmissing`, every server push overwrites the signals and erases what the user is typing. Avoid signals for anything other than form inputs; store UI state the render needs in tab state keyed by `:biff.datastar/tab-id`.
 11. **Keep page rendering fast.** Every write re-renders open pages. Move expensive queries into an action that stores results in tab state.
-12. **Change the data model in `schema.clj`.** Edit the `columns` map; Biff regenerates `resources/schema.sql` and sqldef migrates on startup. Run `(refresh)` from `repl.clj` after schema or start-order changes.
+12. **Change the data model in `schema.clj`, never in `resources/schema.sql`.** Edit the `columns` map, and put extra SQL such as multi-column indexes in `extra-init-sql` in `schema.clj`. Biff regenerates `resources/schema.sql` from `columns`, and sqldef migrates on startup. Run `(refresh)` from `repl.clj` after schema or start-order changes.
 13. **Query through biff.graph where the data model is involved.** Biff generates one batch resolver per table from `columns`. Add derived-data and session resolvers under `model/`, and request data with `[:biff.graph.fx/query ...]` as a pipeline's initial effect.
-14. **Use `biff.background` for scheduled and queued work.** Declare `:biff.background/tasks` and `:biff.background/queues` in a module and submit with `submit-jobs` or the `:biff.background.fx/submit-jobs` effect. Jobs are in memory only.
+14. **Use `biff.background` for scheduled and queued work.** Declare `:biff.background/tasks` and `:biff.background/queues` in a module and submit with `submit-jobs` or the `:biff.background.fx/submit-jobs` effect. Jobs live in memory only. They are not persisted and are not retried, and a consumer that throws logs the error and drops the job. Queues default to one thread (the schema doc's "10" is stale), and tasks and queues are read only at startup.
 15. **Run `clj -M:run code-quality` before finishing.** It updates clj-kondo configs, formats, lints, and tests. The starter CI fails when formatting would change files. While the app runs, agents can evaluate changes, lint, and test with `trench -p $(cat .nrepl-port) -e "((requiring-resolve 'com.biffweb.tasks/agent-refresh))"`.
 
 `/clj-fix` from clojure-skills calls `clj -M:cljfmt`, `clj -X:test`, and `clj -M:dry4clj`, which the starter's `deps.edn` does not define (it has only `:run` and `:prod`). Use `clj -M:run code-quality`, `clj -M:run format`, `clj -M:run lint`, and `clj -M:run test` instead. Biff's `format` task also inserts blank lines between multi-line pairs before running cljfmt, so formatting with plain cljfmt produces different output.
@@ -136,10 +136,6 @@ Detailed patterns live in `references/biff-reference.md`. Load it when working o
 - **`defpipe`, `pipe`, and `:biff.fx/test` do not exist.** The changelog and release notes mention them, but the code provides `pipeline` / `defpipeline`, and tests call a machine or pipeline with no arguments to get its state functions.
 - **SQLite column types are `:int :real :text :boolean :inst :uuid :enum :edn :blob`.** The biff.sqlite README example uses `:string`, which fails validation.
 - **Destructive migrations are skipped silently.** Removing or retyping a column leaves the old column in place. Apply drops by hand with `target/bin/sqlite3def storage/sqlite/main.db --apply --enable-drop -f resources/schema.sql` after startup regenerates `schema.sql`.
-- **Do not edit `resources/schema.sql`.** It is regenerated from `columns`; extra SQL such as multi-column indexes belongs in `extra-init-sql` in `schema.clj`.
-- **SSE re-render requests must return only the wrapper element.** Returning a full document when `:biff.datastar/sse-request` is true nests `<html>` inside the page.
-- **Signals without `__ifmissing` are overwritten** on every server push, which erases what the user is typing.
-- **Background jobs are not persisted and are not retried.** A consumer that throws logs the error and drops the job. Queues default to one thread (the schema doc's "10" is stale). Tasks and queues are read only at startup.
 - **`:biff.background/job` is the job key.** The biff.background README destructures `{:biff.background/queues [job]}`, which is wrong; use `{:biff.background/keys [job queue]}`.
 - **A missing `COOKIE_SECRET` makes sessions fall back to memory.** Sessions then vanish on every restart; `init` generates the secret into both env files.
 - **CSRF protection is header based.** biff.ring rejects state-changing requests that carry neither `Sec-Fetch-Site` nor `Origin` (scripts and `curl` get 403). No token is needed in forms; the starter sets `:biff.auth/skip-csrf-protection true` for the same reason.
