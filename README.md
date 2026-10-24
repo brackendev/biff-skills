@@ -2,7 +2,7 @@
 
 [Biff](https://biffweb.com/) 2 web framework skills packaged as an [APM](https://github.com/microsoft/apm) plugin. One install deploys the full set to every runtime in APM's default target set: Claude Code, Codex, OpenCode, Cursor, Copilot, Gemini, Windsurf, Kiro, and Grok Build. Antigravity is supported by naming it explicitly with `--target antigravity`.
 
-Skills follow the [Agent Skills](https://agentskills.io) open standard. The `biff` style and conventions skill and the `biff-lenses` code-review companion auto-trigger from conversation context. The rest appear as slash commands. Runtimes differ in how they offer these commands: Codex lists them under `/skills` and runs them as `$name`, OpenCode attaches them with `@name`, and Gemini CLI does not read the user-only setting, so its agent can start any of them.
+Skills follow the [Agent Skills](https://agentskills.io) open standard. The `biff` style and conventions skill and the `biff-lenses` code-review companion auto-trigger from conversation context. The other skill, `/biff-deploy`, is a user-only slash command. Runtimes differ in how they offer it: Codex lists it under `/skills` and runs it as `$name`, OpenCode attaches it with `@name`, and Gemini CLI does not read the user-only setting, so its agent can start it.
 
 ## Companion packages
 
@@ -13,7 +13,7 @@ Seven sibling APM packages. This package layers on top of [clojure-skills](https
 | [clojure-skills](https://github.com/brackendev/clojure-skills) | Host-neutral [Clojure](https://clojure.org/) family baseline: style, naming, threading, collections, atoms, dispatch, formatting, namespaces, and testing. Triggers on `.clj`, `.cljs`, `.cljc`, `.cljd`. | — |
 | [clojure-jvm-skills](https://github.com/brackendev/clojure-jvm-skills) | [Clojure](https://clojure.org/) on the JVM: Java interop, refs / agents / STM, `with-open`, JVM-typed exceptions, `alter-var-root`, and the Clojure CLI / `tools.build` / `clj-kondo` / `cljfmt` / `test-runner` / nREPL workflow. | `clojure-skills` |
 | [clojurescript-skills](https://github.com/brackendev/clojurescript-skills) | [ClojureScript](https://clojurescript.org/) style and tooling: JavaScript interop, externs inference, macro stage separation, `catch :default`, JS-flavored numbers and truthiness, and the `cljs.main` workflow. Triggers on `.cljs`, `.cljc` compiled to JS, `shadow-cljs.edn`, `figwheel-main.edn`. | `clojure-skills` |
-| [biff-skills](https://github.com/brackendev/biff-skills) (this package) | [Biff](https://biffweb.com/) 2 web framework on the JVM: scaffolding, conventions, deployment. | `clojure-skills` + `clojure-jvm-skills` |
+| [biff-skills](https://github.com/brackendev/biff-skills) (this package) | [Biff](https://biffweb.com/) 2 web framework on the JVM: conventions and deployment. | `clojure-skills` + `clojure-jvm-skills` |
 | [electric-skills](https://github.com/brackendev/electric-skills) | [Electric](https://github.com/hyperfiddle/electric) v3 full-stack reactive framework: `e/defn` components, `e/client` / `e/server` site transfer, `e/for` over `e/diff-by`, `e/watch` state, `e/Token` transactions, `e/Offload`, the `electric-dom3` and `electric-forms5` APIs, and the single-JVM shadow-cljs workflow. Triggers on `hyperfiddle.electric3`, `hyperfiddle.electric-dom3`, `e/defn`, `e/client`, `e/server`, and `com.hyperfiddle/electric`. | `clojure-skills` + `clojurescript-skills` + `clojure-jvm-skills` |
 | [fulcro-skills](https://github.com/brackendev/fulcro-skills) | [Fulcro](https://github.com/fulcrologic/fulcro) 3 full-stack framework: `defsc` components, idents and the normalized client database, mutations, `df/load!`, dynamic routing, forms, UI state machines, Fulcro Inspect, and the Pathom 3 server. Triggers on `com.fulcrologic.fulcro.*`, `com.fulcrologic.rad.*`, `com.wsscode.pathom3.*`, `defsc`, `defmutation`, `defrouter`, `df/load!`, and ident vectors. | `clojure-skills` + `clojurescript-skills` + `clojure-jvm-skills` |
 | [clojuredart-skills](https://github.com/brackendev/clojuredart-skills) | [ClojureDart](https://github.com/Tensegritics/ClojureDart) on [Flutter](https://flutter.dev/): Dart interop, type hints, `cljd.flutter` directives, async, FFI, REPL, and the Flutter project workflow. Triggers on `.cljd`, `cljd.flutter`. | `clojure-skills` |
@@ -51,26 +51,15 @@ A quick guide to every slash command. The detailed entries under [Skills](#skill
 
 | Command | Use it when | What it does |
 |---------|-------------------|--------------|
-| `/biff-new` | Starting a new Biff project | Clones the official starter, initializes it, and verifies the first `clj -M:run dev` |
 | `/biff-deploy` | Deploying a Biff app | Provisions and deploys to an Ubuntu server, hot-reloads a deployment, or builds an uberjar, then verifies with logs and a smoke check |
 
-For lint, format, and test, run the project's own `clj -M:run code-quality` task. The `/clj-fix` command from [clojure-skills](https://github.com/brackendev/clojure-skills) expects `:cljfmt` and `:test` aliases that Biff 2 projects do not define.
+For lint, format, and test, run the project's own `clj -M:run code-quality` task, which the starter's continuous integration workflow also runs. The `/clj-fix` command from [clojure-skills](https://github.com/brackendev/clojure-skills) expects `:cljfmt` and `:test` aliases that Biff 2 projects do not define.
 
 ## Skills
 
 User-invocable skills follow the conventions documented in [CONVENTIONS.md](CONVENTIONS.md): natural-language keywords and bare paths, no `--name` flags other than `--report`, mutation as the default, and a shared scope vocabulary.
 
-### Scaffolding and quality
-
-#### `/biff-new <project-name>`
-
-Scaffold a new Biff project by cloning the official [biff-starter](https://github.com/jacobobryant/biff-starter) repository and running its `clj -M:run init` task. The skill confirms the project directory, the main namespace, and whether to replace the starter's git history before running anything, then verifies that `clj -M:run dev` serves the app. `<project-name>` is required. The skill omits the `all`, `<path>`, and `--report` rows because scaffolding has no useful default scope or preview.
-
-```bash
-/biff-new my-app
-```
-
-For format, lint, and test checks, run `clj -M:run code-quality` in the project. The starter's continuous integration workflow runs the same task.
+### Deployment
 
 #### `/biff-deploy [vps|soft|uberjar] [--report]`
 

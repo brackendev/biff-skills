@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.2.6] - 2026-10-25
+
+### Changed
+
+- The Companion packages table describes biff-skills as covering Biff 2 conventions and deployment, because that package no longer scaffolds projects.
+
+### Removed
+
+- The `/biff-new` command is removed. Start a new Biff 2 project from the official [biff-starter](https://github.com/jacobobryant/biff-starter) repository and run `clj -M:run init`. The `biff` skill still describes the starter layout and the `init` task.
+
 ## [0.2.5] - 2026-10-24
 
 ### Added

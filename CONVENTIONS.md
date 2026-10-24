@@ -13,12 +13,11 @@ User-invocable skills accept natural-language keywords and bare paths. The singl
 Skill-specific modifiers are bare phrases, not flags. Examples used in this plugin:
 
 - `vps`, `soft`, `uberjar`: deployment-target keywords for `/biff-deploy`
-- `<project-name>`: required positional argument for `/biff-new`
 - `all`, `<path>`, `<glob>`: shared scope keywords listed in rule 2
 
 Each skill documents its own modifiers in its `## Arguments` table.
 
-Exemptions are listed in the [Exemptions](#exemptions) section with a reason. The standard exemption pattern is a scaffolding skill that needs a required positional argument because no useful default exists.
+Exemptions are listed in the [Exemptions](#exemptions) section with a reason. The standard exemption pattern is a skill that needs a required positional argument because no useful default scope exists.
 
 ### Rule 2: scope vocabulary
 
@@ -42,7 +41,7 @@ Skills that can mutate the workspace apply changes when invoked. The operator pa
 
 Only the literal token `--report` enables report-only mode. Natural-language phrases ("preview", "dry run", "rehearse") are scope input or step keywords, not mode triggers. A skill that conflates them is wrong.
 
-Command verbs reinforce the default. Skills named `/biff-new` and `/biff-deploy` (verbs that imply action) mutate by default. The plugin currently ships no pure-report user-invocable skill; a future review-style skill would carry a reading verb (`/biff-review-*`, `/biff-audit-*`, `/biff-check-*`) and omit `--report`.
+Command verbs reinforce the default. `/biff-deploy` (a verb that implies action) mutates by default. The plugin currently ships no pure-report user-invocable skill; a future review-style skill would carry a reading verb (`/biff-review-*`, `/biff-audit-*`, `/biff-check-*`) and omit `--report`.
 
 ### Rule 4: vendored and generated paths are excluded by default
 
@@ -65,7 +64,7 @@ The boundary statement: Rule 4 applies to mutating skills that discover candidat
 
 **Reporting.** The skill includes a single "skipped N vendored or generated paths" line in its results when the filter excluded any path. Under `--report`, the skill emits the full list so the operator can audit scope.
 
-**Scope of Rule 4 in this plugin.** No skill in this plugin discovers candidate files from the workspace today. Both `/biff-new` (clones the official Biff starter project and initializes it) and `/biff-deploy` (runs the project's deployment tasks against the current git branch) are exempt because their target sets are defined by explicit project operations, not workspace discovery. The rule is recorded so any future fix-style skill in this plugin honors the same contract as its companion packages.
+**Scope of Rule 4 in this plugin.** No skill in this plugin discovers candidate files from the workspace today. `/biff-deploy` runs the project's deployment tasks against the current git branch, so it is exempt because its target set is defined by an explicit project operation, not workspace discovery. The rule is recorded so any future fix-style skill in this plugin honors the same contract as its companion packages.
 
 ## Classification
 
@@ -81,7 +80,6 @@ A skill is classified by its actual behavior, not by its name. If the name and b
 
 | Skill           | Class    | `--report` available? | Notes |
 |-----------------|----------|------------------------|-------|
-| `/biff-new`     | Mutating | No                     | Clones the official `biff-starter` repository and runs its `clj -M:run init` task. Preview the side effects by reading `SKILL.md`. |
 | `/biff-deploy`  | Mutating | Yes                    | Default path is an Ubuntu server provisioned with `clj -M:run prod-setup` and updated with `clj -M:run deploy`. `--report` prints the deployment path, the resolved domain, the branch and worktree state, the uploaded untracked files, and the command sequence without running anything. |
 
 The model-invocable `biff` and `biff-lenses` skills have no argument surface and are not classified here.
@@ -111,18 +109,9 @@ The section name `## Customization` is retired.
 
 The default deploys via the VPS path (`clj -M:run prod-setup` on first use, then `clj -M:run deploy`). Each remote-touching command still asks the operator for confirmation, which is layered on top of the standard mutate-by-default contract. With `--report`, the skill prints the planned command sequence (including the resolved domain and deployment name, the current branch, whether the worktree is clean, the untracked files the deploy uploads, or the uberjar output path) and writes nothing. The `## Mutation` section in the skill body documents the per-command confirmation behavior.
 
-### `/biff-new` -- mutating skill, exemption from `all`/path rows
-
-```
-/biff-new my-app             # scaffolds the project tree at ./my-app
-/biff-new                    # prompts the operator for a project name and namespace
-```
-
-`<project-name>` is a required positional argument. The skill omits the `all` and `<path>` rows because they would not be meaningful for scaffolding. It also omits `--report` because preview is meaningless: the operator reads the upstream `biff-starter` repository (and this `SKILL.md`) to see what files will be written. The exemption is listed below.
-
 ## Exemptions
 
-`/biff-new` accepts a required positional `<project-name>` because no useful default exists for scaffolding. It omits the `all` and `<path>` scope rows and the `--report` flag for the same reason. The `## Arguments` table in its `SKILL.md` documents the positional grammar.
+No skill in this plugin claims an exemption today. The standard exemption pattern is a skill that accepts a required positional argument, such as a project name, because no useful default scope exists for it. Such a skill omits the `all` and `<path>` scope rows, omits `--report` when preview is meaningless, and documents the positional grammar in the `## Arguments` table of its `SKILL.md`.
 
 ## Ambiguity notes
 
@@ -142,7 +131,7 @@ When adding or modifying a user-invocable skill, confirm each item before commit
 
 - [ ] Skill has a `## Arguments` section (or is listed under [Exemptions](#exemptions)).
 - [ ] Scope rows match the canonical table; opt-in rows appear only where the skill genuinely supports them.
-- [ ] If the skill mutates, the command verb signals it (`/biff-new`, `/biff-deploy`).
+- [ ] If the skill mutates, the command verb signals it (`/biff-deploy`).
 - [ ] If the skill mutates and preview is useful, `--report` is documented.
 - [ ] If the skill is pure-report, the verb signals it (a future `/biff-review-*`, `/biff-audit-*`, or `/biff-check-*` skill) and the skill has no `--report` flag.
 - [ ] No `## Customization` section.
