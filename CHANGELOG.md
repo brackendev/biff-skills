@@ -6,6 +6,46 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.2.8] - 2026-10-25
+
+### Added
+
+- The `biff` skill covers the SQLite additions in Biff 2.0.3: the `com.biffweb.sqlite.schema` column helpers (`s/pkey`, `s/text`, `s/ref`, and others), the `:default` column option, `execute-one` and its `:biff.sqlite.fx/execute-one` effect, and the generated resolvers for unique columns and for `:backref` and `:backref-many` reverse joins. It tells the agent to declare backrefs instead of writing join resolvers.
+- The skill covers the `:?ns/attr` shorthand for optional query attributes, the 400 response for a required `:request/*` attribute that cannot be resolved, `biff.graph/uml` and the `graph.mmd` file that the starter writes, the built-in `:biff.fx/swap!` and `:biff.fx/http` effects, `:biff.fx/seed`, the `nrepl` task, and the optional `:biff.sqlite/litestream-replica-path` key.
+- The skill describes the agent skills that `clojure -M:run init` writes into `.agents/skills/` (`biff-dev`, `biff-code-quality`, `biff-code-review`, `biff-spec-review`, and `biff-spec-dev`). It tells the agent not to edit them and to use `biff-code-review` for full convention reviews.
+- The `biff` skill warns that a misspelled effect key runs nothing and raises no error, and that `init` repeats its namespace prompt forever when it gets no input. It shows how to pipe the answers to `init`. It also warns that the starter's `start` returns nil, so its `-main` starts nREPL on a random port, and that the `graph.mmd` file that `start` writes blocks deploys until it is committed or ignored.
+- `/biff-deploy` lists the files that block a deploy (`graph.mmd` and the files a project-scope APM install adds). Before a soft deploy, it checks that `start` returns the system map, because the soft deploy and `prod-nrepl` connect to the configured nREPL port. It also lists the Litestream backup keys in `config.prod.env`.
+
+### Changed
+
+- All skills target Biff 2.0.3 and the matching `biff-starter` project.
+- Path examples and rules name path parameters after their entity (`:post-id`, not `:id`), as the upstream review rules require.
+- The skills call the module folder for resolvers that return hiccup `uicomp/`, the name that the upstream review rules use.
+- The README requirements state that the skills need Java 21 or later and a Biff 2 project created from `biff-starter`.
+- Every command that the skills tell the agent to run starts with `clojure` instead of `clj`, for example `clojure -M:run dev` and `clojure -M:run deploy`, matching Biff's own agent skills and continuous integration workflow. The `clj` launcher exits with an error when `rlwrap` is not installed. The skills keep `clj` only where they quote an upstream file: the `ExecStart` line that `prod-setup` writes and the build line of the starter `Dockerfile`.
+- The `biff` skill and the README explain how `/clj-fix` from clojure-skills differs from Biff's own tasks in a Biff project. `/clj-fix` formats only the source and test directories with whichever cljfmt it finds, does not add the blank lines that Biff's `format` task inserts, lints with extra warnings turned on, and skips its test and dry steps. The skill tells the agent to use `clojure -M:run code-quality` and to run it after any `/clj-fix` run.
+- The `biff` skill activates for the `-M:run` tasks whether they start with `clojure` or `clj`.
+- The `biff` skill's trigger description fits the 1,024-character limit of the Agent Skills specification. It keeps every trigger term and leaves out the summary of covered topics, which the skill body already describes.
+
+### Fixed
+
+- `/biff-deploy`, the README, and `CONVENTIONS.md` say that a soft deploy loads every project source file into the running app. They said it loaded only the changed files.
+- Without captcha keys, the app starts, and every sign-in request then fails with a 500. The skills said startup fails.
+- Without a cookie secret, no warning is logged. The skill said a warning appears.
+- The `biff-lenses` skill uses the `:request/*` namespace for read-authorization resolvers. It used `:params/*`.
+- The destructive-migration warning names the `-- Skipped:` log line that sqldef prints. The skill said the skip was silent.
+- The project layout lists `.agents/skills/` and `graph.mmd`. It listed an `AGENTS.md` file that the starter does not have.
+- The CSRF notes say that biff.ring also rejects requests whose `Sec-Fetch-Site` is `same-site` or `cross-site`.
+- The XTDB notes give the Java range for biff.xtdb as 21 or later but earlier than 25, and they say that writes through biff.xtdb trigger `on-tx` as soon as XTDB indexes them.
+- The README describes this package as framework guidance and deployment. It still listed scaffolding, which release 0.2.6 removed.
+- The README names `/clj-smells-fix`, the current name of the clojure-skills smells command.
+- The `biff` skill and `biff-lenses` say when Biff's `format` task inserts a blank line: between adjacent pairs in a map, a binding vector, or a `cond` when either pair puts its key and value on separate lines. They said it separated every multi-line pair, but a pair whose value alone spans several lines gets no blank line.
+
+### Removed
+
+- The warning that the biff.sqlite README uses a `:string` column type is removed, because the README uses `:text`.
+- Guidance for older Biff versions is removed: Biff 1 migration from the `biff-lenses` skill, the Biff 1 install note from the README, and the Java version history from the skills and the README.
+
 ## [0.2.7] - 2026-10-25
 
 ### Added

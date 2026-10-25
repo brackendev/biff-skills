@@ -80,7 +80,7 @@ A skill is classified by its actual behavior, not by its name. If the name and b
 
 | Skill           | Class    | `--report` available? | Notes |
 |-----------------|----------|------------------------|-------|
-| `/biff-deploy`  | Mutating | Yes                    | Default path is an Ubuntu server provisioned with `clj -M:run prod-setup` and updated with `clj -M:run deploy`. `--report` prints the deployment path, the resolved domain, the branch and worktree state, the uploaded untracked files, and the command sequence without running anything. |
+| `/biff-deploy`  | Mutating | Yes                    | Default path is an Ubuntu server provisioned with `clojure -M:run prod-setup` and updated with `clojure -M:run deploy`. `--report` prints the deployment path, the resolved domain, the branch and worktree state, the uploaded untracked files, and the command sequence without running anything. |
 
 The model-invocable `biff` and `biff-lenses` skills have no argument surface and are not classified here.
 
@@ -100,14 +100,14 @@ The section name `## Customization` is retired.
 
 ```
 /biff-deploy                  # default vps path; prod-setup once, then git push and restart
-/biff-deploy soft             # push and evaluate changed files without a restart
-/biff-deploy uberjar          # build target/jar/app.jar via clj -M:run uberjar
+/biff-deploy soft             # push and load every source file without a restart
+/biff-deploy uberjar          # build target/jar/app.jar via clojure -M:run uberjar
 /biff-deploy --report         # print the planned commands, domain, and branch state; no writes
 /biff-deploy uberjar --report # print the uberjar command and output path; no writes
 /biff-deploy all              # synonym for (no argument)
 ```
 
-The default deploys via the VPS path (`clj -M:run prod-setup` on first use, then `clj -M:run deploy`). Each remote-touching command still asks the operator for confirmation, which is layered on top of the standard mutate-by-default contract. With `--report`, the skill prints the planned command sequence (including the resolved domain and deployment name, the current branch, whether the worktree is clean, the untracked files the deploy uploads, or the uberjar output path) and writes nothing. The `## Mutation` section in the skill body documents the per-command confirmation behavior.
+The default deploys via the VPS path (`clojure -M:run prod-setup` on first use, then `clojure -M:run deploy`). Each remote-touching command still asks the operator for confirmation, which is layered on top of the standard mutate-by-default contract. With `--report`, the skill prints the planned command sequence (including the resolved domain and deployment name, the current branch, whether the worktree is clean, the untracked files the deploy uploads, or the uberjar output path) and writes nothing. The `## Mutation` section in the skill body documents the per-command confirmation behavior.
 
 ## Exemptions
 
@@ -123,7 +123,7 @@ No skill in this plugin claims an exemption today. The standard exemption patter
 
 **Step keywords versus scope keywords.** `/biff-deploy` accepts deployment-target keywords (`vps`, `soft`, `uberjar`) that select work to run, and the scope keyword `all` (a synonym for the default VPS path, accepted for family consistency). Target keywords are skill-specific and listed in the skill's own table. Scope keywords are shared and listed here. When a skill has both, the `## Arguments` table lists both with clearly distinct rows.
 
-**Tool-level flags the skill calls internally.** A skill may invoke a tool that itself uses POSIX flags (for example, `clj -M:run deploy --soft`, `clj -M:run prod-setup --copy-only`, `curl -fsS`, `git status --porcelain`). Those are tool-level flags, not skill flags, and do not count against rule 1. The `soft` keyword selects the `deploy --soft` task; the operator types the bare keyword, never the flag. The skill body should disambiguate when a tool flag could be mistaken for a skill flag.
+**Tool-level flags the skill calls internally.** A skill may invoke a tool that itself uses POSIX flags (for example, `clojure -M:run deploy --soft`, `clojure -M:run prod-setup --copy-only`, `curl -fsS`, `git status --porcelain`). Those are tool-level flags, not skill flags, and do not count against rule 1. The `soft` keyword selects the `deploy --soft` task; the operator types the bare keyword, never the flag. The skill body should disambiguate when a tool flag could be mistaken for a skill flag.
 
 ## Author checklist
 
@@ -135,7 +135,7 @@ When adding or modifying a user-invocable skill, confirm each item before commit
 - [ ] If the skill mutates and preview is useful, `--report` is documented.
 - [ ] If the skill is pure-report, the verb signals it (a future `/biff-review-*`, `/biff-audit-*`, or `/biff-check-*` skill) and the skill has no `--report` flag.
 - [ ] No `## Customization` section.
-- [ ] No `--name` flags other than `--report`. Tool-level flags the skill calls internally (for example, `clj -M:run deploy --soft`, `curl -fsS`) are not skill flags and do not count.
+- [ ] No `--name` flags other than `--report`. Tool-level flags the skill calls internally (for example, `clojure -M:run deploy --soft`, `curl -fsS`) are not skill flags and do not count.
 - [ ] Mutating skills that walk the workspace include a one-line Rule 4 reference in their `## Mutation` or `## Scope` section. Exempt skills (scaffolding, deployment, dependency upgrade, fixed targets, git operations, named paths) carry no reference.
 - [ ] Frontmatter `name` matches the skill's directory name.
 - [ ] `agents/openai.yaml` `default_prompt` references the current command name.

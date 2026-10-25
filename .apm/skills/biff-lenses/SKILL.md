@@ -7,7 +7,7 @@ description: >-
   against Biff code: biff.core modules and start-order, biff.fx defpipeline
   and defmachine effects, biff.graph resolvers, biff.sqlite columns and
   authorized-write, biff.ring defpath routes, Datastar pages, actions, and tab
-  state, biff.background tasks and queues, and the clj -M:run task workflow.
+  state, biff.background tasks and queues, and the clojure -M:run task workflow.
   Layers on clojure-lenses from clojure-skills.
 user-invocable: false
 ---
@@ -25,8 +25,8 @@ When the [code-lenses](https://github.com/brackendev/code-lenses) plugin is acti
 - One page, one render handler. Datastar re-renders the whole page from the database after every write, so there is no client state to synchronize and no per-action partial template to maintain. Adding hand-written partial updates or a client-side state library brings back the complexity this design removes.
 - Actions update state and return 204. An action handler that also builds HTML is doing the render handler's job twice.
 - A single `:start` state is enough for most POST handlers. Reach for `defmachine` with named states only when the logic branches on an effect's result; otherwise `defpipeline` with one or two functions is the simple form.
-- Let biff.sqlite generate table resolvers from `columns`. Hand-writing a resolver per table duplicates what the module already registers.
-- New module folders (`work/`, `api/`, `ui_components/`) are cheap; a `lib/` namespace that grows into a framework is not. Keep `lib/` to plain helper functions.
+- Let biff.sqlite generate resolvers from `columns`: per-table lookups by primary key, lookups by `:unique` columns, and reverse joins for `:ref` columns that set `:backref` or `:backref-many`. Hand-writing any of these duplicates what the module already registers.
+- New module folders (`work/`, `api/`, `uicomp/`) are cheap; a `lib/` namespace that grows into a framework is not. Keep `lib/` to plain helper functions.
 
 ## A Philosophy of Software Design
 
@@ -43,13 +43,13 @@ When the [code-lenses](https://github.com/brackendev/code-lenses) plugin is acti
 - Replace string-built URLs with `defpath` before changing a route. Literal paths duplicated across handlers drift when the route changes.
 - Group routes that share middleware under one `["" {:middleware [...]}]` entry instead of repeating the wrapper per route.
 - Move a column into `columns` before writing code that reads it. Coercion applies only to declared columns, so undeclared ones come back as raw SQLite values.
-- Run `clj -M:run format` after tidying. The starter's cljfmt settings align map and `let` columns, and its `format` task inserts blank lines between multi-line pairs, so hand-formatted code produces CI diffs.
+- Run `clojure -M:run format` after tidying. The starter's cljfmt settings align map and `let` columns, and its `format` task inserts a blank line between adjacent pairs when either pair puts its key and value on separate lines, so hand-formatted code produces CI diffs.
 
 ## Parse, Don't Validate
 
 - `columns` is the parse layer for stored data. Declared types (`:uuid`, `:inst`, `:enum`, `:edn` with `:extra-schema`) are coerced on write and read, so handlers receive `java.time.Instant`, UUIDs, and keywords, never raw strings or integers.
 - `defpath` and `wrap-path-param-uuids` parse route identity: UUID path parameters arrive as `java.util.UUID`. Handlers that call `parse-uuid` on path params duplicate that step.
-- Params resolvers are the parse-and-authorize boundary for reads. A resolver that returns `{:params/widget {:widget/id ...}}` only for an authorized user hands the page a parsed, permitted identity; pages do not re-check access.
+- Request resolvers are the parse-and-authorize boundary for reads. A resolver that returns `{:request/widget {:widget/id ...}}` only for an authorized user hands the page a parsed, permitted identity; pages do not re-check access, and a page that requires `:request/widget` gets a 400 response when the resolver returns nothing.
 - `:biff.datastar/tab-id` is already derived from the user id and the untrusted client tab id. Use it as the tab-state key; never read the raw `client-tab-id` signal.
 - Signals are untrusted input. Parse values from `:biff.datastar/signals` (for example `(some-> (:tab/background-color signals) keyword)`) and let `authorized-write` and `:extra-schema` reject what does not fit.
 - Configuration is parsed once by `biff.config` into the system map. Code that reads environment variables directly bypasses that parse and the secret wrapping.
@@ -57,7 +57,7 @@ When the [code-lenses](https://github.com/brackendev/code-lenses) plugin is acti
 ## Honest Code
 
 - Handlers built with `defpipeline` return effects as data. `{:_ [:biff.sqlite.fx/authorized-write {...}] :status 204}` states exactly what the handler does; a handler that calls `execute` mid-function hides the write inside logic that could have been pure.
-- Pure state functions get time and randomness from the context: `:biff.fx/now` and `:biff.fx/random-uuid7-seq`. Calling `(java.time.Instant/now)` or `random-uuid` inside a state function makes it impure and its tests nondeterministic.
+- Pure state functions get time and randomness from the context: `:biff.fx/now`, `:biff.fx/random-uuid7-seq`, `:biff.fx/random-uuid4-seq`, and `:biff.fx/seed`. Calling `(java.time.Instant/now)` or `random-uuid` inside a state function makes it impure and its tests nondeterministic.
 - The database is the single source of truth for what a page shows, and tab state (a table keyed by `tab-id`) is the source for per-tab UI state. Server-side atoms holding UI state are invisible to the re-render loop.
 - `authorized-write` is the honest write path for user actions: the diff it builds is checked against one declared policy. `execute` for a user-initiated write is a hidden bypass of that policy.
 - Let It Crash, Biff edition: a failing effect throws `ex-info` with `:biff.fx/trace`, and biff.ring's internal-error middleware turns it into the `on-error` page. Do not catch and swallow around effects. Background jobs are not retried, so work that must eventually succeed needs a persisted record that a scheduled task re-submits, not a catch block.
@@ -68,9 +68,8 @@ When the [code-lenses](https://github.com/brackendev/code-lenses) plugin is acti
 - Seams in Biff 2: the `:biff.fx/handlers` map (substitute effect handlers in a test context), the zero-argument call on machines and pipelines (test logic without effects), `:biff.sqlite/db-path` (point a test system at a temporary file), and `(biff.core/start initial-system #'modules start-order)` (override init values).
 - Sprout a new module rather than growing an old one. New behavior goes in a new namespace under `app/` or `model/` registered in `modules.clj`; the legacy module stays untouched.
 - Convert one handler at a time from a plain function to `defpipeline`: move each side effect into an effect descriptor and keep the function's inputs and response unchanged. Callers and routes do not change.
-- Effect sketching: a change to `columns` touches the generated `schema.sql`, every resolver output that includes the column, every `authorize` rule over its table, and every page that queries it. Destructive column changes need a manual `sqlite3def --enable-drop` run.
+- Effect sketching: a change to `columns` touches the generated `schema.sql`, every resolver output that includes the column, every `authorize` rule over its table, and every page that queries it. `graph.mmd`, which the starter's `start` writes from `(biff.graph/uml @system)`, maps the resolver graph for this sketch. Destructive column changes need a manual `sqlite3def --enable-drop` run.
 - Characterization tests: start a system with a temporary `:biff.sqlite/db-path`, insert known rows with `execute`, and assert on `biff.graph/query` results before changing a resolver.
-- Migrating a Biff 1 app follows upstream's `docs/migrating-from-biff1.md`: adopt `biff.core` (wrapping old components with `biff.core/component-shim`) and `biff.config` first, then other libraries one at a time. XTDB 1 apps can stay on XTDB 1 by implementing the `:biff.core/kv-*` adapter functions.
 
 ## Gotchas
 
