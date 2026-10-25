@@ -216,7 +216,7 @@ Testing: call a machine with no arguments to get its state map, or a pipeline wi
 - Query syntax: `[:a [:? :optional] {:join [:x]} {[:? :optional-join] [:x]} {:k [:*]}]`. Output attributes are implicitly optional; input attributes must be marked `[:? ...]` to be optional. Keys not declared in `:output` are filtered out.
 - Run queries with `(biff.graph/query ctx input query)` or the `[:biff.graph.fx/query input query]` effect (omit `input` for global queries such as `{:session/user [...]}`).
 - biff.sqlite generates one batch resolver per table from `columns` (primary key in, every column plus foreign-key joins out), so `{:user/id uid}` resolves `:user/display-name` with no hand-written resolver.
-- For read authorization, write "params" resolvers that take ids from path or query params and return the entity as a join (for example `:output [{:params/widget [:widget/id]}]`) only when the current user may read it.
+- For read authorization (Iron Law BIFF-3), write resolvers that take ids from path or query params and return the entity as a `:request/*` join (for example `:output [{:request/widget [:widget/id]}]`) only when the current user may read it. The starter's review rules require the `request` namespace, and a Ring handler that queries a required `:request/...` attribute it does not receive returns a 400 response. Query `:?request/...` to handle the missing case yourself.
 - Test a resolver with `((:biff.graph/resolve-fn my-resolver) {:biff.graph/input {:user/id 1}})`. Errors carry `:biff.graph/trace`.
 
 ## Database (biff.sqlite)

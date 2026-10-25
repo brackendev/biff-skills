@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.2.7] - 2026-10-25
+
+### Added
+
+- The `biff` skill opens with Iron Laws (BIFF-1 through BIFF-6): numbered rules that prevent security holes and lost changes. The agent does not write code that breaks a law, and when existing code breaks one, it reports the law ID, the location, and the correct pattern, then asks before changing code outside the task. Key Rules that guarded against bugs or security holes moved into the laws, and the remaining Key Rules are renumbered.
+
+### Fixed
+
+- The read-authorization guidance uses the `:request/*` join namespace that the starter's review rules require, instead of `:params/*`.
+
 ## [0.2.6] - 2026-10-25
 
 ### Changed
