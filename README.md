@@ -44,6 +44,7 @@ Update later with `apm update [-g]`. Remove with `apm uninstall brackendev/biff-
 - A Biff 2 project. The skills describe Biff 2 and the project layout of the official [biff-starter](https://github.com/jacobobryant/biff-starter) repository.
 - [clojure-skills](https://github.com/brackendev/clojure-skills) installed alongside, for the host-neutral baseline plus `/clj-fix` and `/clj-smells-fix`.
 - [clojure-jvm-skills](https://github.com/brackendev/clojure-jvm-skills) installed alongside, for JVM-specific Clojure guidance the `biff` skill defers to (Java interop, JVM exceptions, refs / agents / STM, `alter-var-root`, the CLI workflow).
+- [Babashka](https://babashka.org) (`bb`) to run the `biff-rules` hook. Without it, the hook does nothing and prints a notice on standard error.
 
 ## Command guide
 
@@ -80,6 +81,16 @@ These skills activate from conversation context. They cannot be invoked directly
 |-------|----------|
 | **biff** | `com.biffweb.*` namespaces, `biff.core/start`, `:biff.core/id`, `start-order`, `modules.clj`, `defpipeline`, `defmachine`, `defresolver`, `:biff.graph.fx/query`, `:biff.sqlite.fx/*` effects, `authorized-write`, `defpath`, `:biff.ring/routes`, `biff.datastar`, `signals-json`, `signal-name`, Datastar `data-on:` and `@post(` attributes in Clojure code, `:biff.datastar/tab-id`, `:biff.background/tasks` and `:biff.background/queues`, `submit-jobs`, `biff.auth/module`, `resources/schema.sql`, `resources/config.edn`, `config.env`, `config.prod.env`, `repl.clj`, the `-M:run` tasks run with `clojure` or `clj` (`dev`, `code-quality`, `format`, `lint`, `test`, `deploy`, `prod-setup`), `agent-refresh`, `biff-starter`, or any mention of Biff or biffweb. Covers the `biff.core` module system and project layout, routes through `biff.ring`, effects as data with `biff.fx`, `biff.graph` resolvers, SQLite schema, migrations, and authorized writes, Datastar pages and actions, authentication, background jobs, and the task workflow. Defers to the `clojure` skill in [clojure-skills](https://github.com/brackendev/clojure-skills) for host-neutral style and to the `clojure-jvm` skill in [clojure-jvm-skills](https://github.com/brackendev/clojure-jvm-skills) for Java interop, JVM exception handling, nREPL, clj-kondo, cljfmt, and tools.build. The skill opens with Iron Laws (BIFF-1 through BIFF-6), rules that prevent security holes and lost changes. The agent does not write code that breaks them, and it reports a violation it finds in existing code before changing it. |
 | **biff-lenses** | Activates alongside the [code-lenses](https://github.com/brackendev/code-lenses) plugin in Biff work. Layers on top of `clojure-lenses` (in `clojure-skills`) and records only the Biff 2 additions: `biff.core` module isolation, effects as data with `biff.fx`, `biff.graph` resolvers as the read boundary, `biff.sqlite` authorization diffs, `defpath` routing, and the Datastar render loop with tab state. Covers the four default code-lenses philosophies (grug, Honest Code, Tidy First, Parse Don't Validate) and the two opt-in philosophies (APOSD, Legacy Code) that activate when their lens is added with `+aposd` or `+legacy-code` or invoked directly. |
+
+## Hooks
+
+The package includes one hook, `biff-rules`.
+
+### `biff-rules`
+
+Agents seldom load an auto-triggered skill on their own, so this hook gives the agent the BIFF-1 through BIFF-6 Iron Laws of the `biff` skill as text. In a `deps.edn` that names `com.biffweb`, it puts the condensed laws into the agent's context when a session starts, and again after `/clear` or a compaction, with an instruction to load the `biff` skill along with the `clojure` and `clojure-jvm` skills. When the session starts outside such a project, for example in a parent directory, the hook delivers the laws on the first edit of a `.clj`, `.cljs`, `.cljc`, or `.edn` file in a matching project instead, once per session. The hook never edits a file. Without Babashka it does nothing and prints a notice on standard error.
+
+The hook has been run only under Claude Code, where it registers `SessionStart` and `PostToolUse`. The package ships empty Copilot and Cursor hook files, so APM writes no Copilot hook and no native Cursor hook. APM also installs the generic copy for Codex, Gemini CLI, Kiro, and Windsurf, where its effect has not been tested. OpenCode and Grok Build have no hook support.
 
 ## Contributing
 
