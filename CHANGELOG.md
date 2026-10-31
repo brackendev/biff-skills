@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.2.12] - 2026-10-31
+
+### Removed
+
+- The `biff-lenses` skill, and the `biff` skill's pointer to it. The code-lenses package now detects the stack of the code under review and applies each lens to it through general rules, so a separate translation skill per language is no longer needed and its copy of code-lenses guidance can no longer drift.
+
+### Added
+
+- `biff/references/biff-reference.md` states that the client controls every Datastar signal, so signals are parsed like form input, writes go through `authorized-write`, and tab state is keyed by the trusted `:biff.datastar/tab-id`.
+
 ## [0.2.11] - 2026-10-31
 
 ### Changed

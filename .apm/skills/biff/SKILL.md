@@ -21,7 +21,7 @@ user-invocable: false
 
 Biff 2 is a Clojure web framework built as a set of independent libraries under `com.biffweb/*`: `biff.core` (module system), `biff.config` (Aero config), `biff.fx` (effects as data), `biff.graph` (resolver graph), `biff.sqlite` (default database), `biff.ring` (Reitit, Jetty, middleware), `biff.datastar` (server-rendered reactive UI), `biff.background` (scheduled tasks and in-memory queues), `biff.authenticate` (email sign-in codes), `biff.admin` (dashboard), and the dev-only `biff.run` / `biff.tasks` task runner. `com.biffweb/defaults` bundles everything except `run` and `tasks`; `biff.xtdb` (XTDB 2) is an optional alternative to SQLite. Projects start from the `jacobobryant/biff-starter` repository. Java 21 or later is required.
 
-This skill covers only what Biff changes. Follow the `clojure` skill from [clojure-skills](https://github.com/brackendev/clojure-skills) for general style (naming, namespaces, `defn-`, threading, Malli at boundaries, testing) and the `clojure-jvm` skill from [clojure-jvm-skills](https://github.com/brackendev/clojure-jvm-skills) for Java interop, JVM exceptions, nREPL, clj-kondo, cljfmt, and tools.build. For design-philosophy reviews, the `biff-lenses` skill layers Biff deltas onto `clojure-lenses`.
+This skill covers only what Biff changes. Follow the `clojure` skill from [clojure-skills](https://github.com/brackendev/clojure-skills) for general style (naming, namespaces, `defn-`, threading, Malli at boundaries, testing) and the `clojure-jvm` skill from [clojure-jvm-skills](https://github.com/brackendev/clojure-jvm-skills) for Java interop, JVM exceptions, nREPL, clj-kondo, cljfmt, and tools.build.
 
 ## Iron Laws
 

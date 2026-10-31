@@ -2,7 +2,7 @@
 
 This document defines the argument grammar, scope vocabulary, and mutation defaults that every user-invocable skill in `biff-skills` follows. A reader who learns one skill should be able to predict every other skill. New skills follow this document.
 
-These conventions apply to user-invocable skills (`user-invocable: true` in frontmatter). Model-invocable reference skills with no argument surface (currently `biff` and `biff-lenses`) carry no argument grammar and are exempt from rules 1 and 2.
+These conventions apply to user-invocable skills (`user-invocable: true` in frontmatter). Model-invocable reference skills with no argument surface (currently `biff`) carry no argument grammar and are exempt from rules 1 and 2.
 
 ## The four rules
 
@@ -82,7 +82,7 @@ A skill is classified by its actual behavior, not by its name. If the name and b
 |-----------------|----------|------------------------|-------|
 | `/biff-deploy`  | Mutating | Yes                    | Default path is an Ubuntu server provisioned with `clojure -M:run prod-setup` and updated with `clojure -M:run deploy`. `--report` prints the deployment path, the resolved domain, the branch and worktree state, the uploaded untracked files, and the command sequence without running anything. |
 
-The model-invocable `biff` and `biff-lenses` skills have no argument surface and are not classified here.
+The model-invocable `biff` skill has no argument surface and are not classified here.
 
 ## Section structure
 

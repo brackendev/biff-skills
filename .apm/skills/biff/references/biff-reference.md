@@ -133,7 +133,7 @@ A page and its actions, adapted from the starter's `app/demo.clj` (which writes 
      :status 204}))
 ```
 
-- `signals-json` and `signal-name` convert keywords to Datastar names (periods and slashes become underscores); `(signal-name [:my.form/pets 0 :pet/name])` addresses a nested signal. Signals arrive parsed in `:biff.datastar/signals` on every action request, for the whole page.
+- `signals-json` and `signal-name` convert keywords to Datastar names (periods and slashes become underscores); `(signal-name [:my.form/pets 0 :pet/name])` addresses a nested signal. Signals arrive parsed in `:biff.datastar/signals` on every action request, for the whole page. The client controls every signal value, so treat signals as untrusted input: parse each one before use, as with form input, and send writes through `authorized-write`. Key tab state by the trusted `:biff.datastar/tab-id`, never by an id taken from a signal.
 - `(biff.datastar/patch-signals {...})` returns a 200 response that updates client signals, for example to clear an input after submit.
 - `:biff.datastar/tab-id` is a trusted UUID derived from the client tab id and the user id (for a visitor who is not signed in, an id that biff.datastar stores in the session). biff.datastar stores no tab state itself; the starter keeps it in a `tab-state` table (`:tab-state/id` uuid, `:tab-state/data` edn) written with `authorized-write` and read by a resolver.
 - `(biff.datastar/disconnect @system)` closes every SSE connection so clients reconnect; the starter's entry namespace calls it on load so pages refresh after file evaluation.
