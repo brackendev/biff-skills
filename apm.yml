@@ -1,6 +1,6 @@
 name: biff-skills
-version: 0.2.12
-description: Biff 2 web framework toolkit covering the biff.core module system, biff.fx effects, biff.graph resolvers, SQLite schema and authorized writes, Datastar pages and actions, authentication, background jobs, the project task workflow, deployment with biff.tasks, and code-lenses translation. Layers on top of clojure-skills and clojure-jvm-skills.
+version: 0.2.13
+description: Biff 2 web framework toolkit covering the biff.core module system, biff.fx effects, biff.graph resolvers, SQLite schema and authorized writes, Datastar pages and actions, authentication, background jobs, the project task workflow, and deployment with biff.tasks. Layers on top of clojure-skills and clojure-jvm-skills.
 author: Bracken Spencer
 license: MIT
 type: skill
