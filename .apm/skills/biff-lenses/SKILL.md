@@ -56,12 +56,14 @@ When the [code-lenses](https://github.com/brackendev/code-lenses) plugin is acti
 
 ## Honest Code
 
-- Handlers built with `defpipeline` return effects as data. `{:_ [:biff.sqlite.fx/authorized-write {...}] :status 204}` states exactly what the handler does; a handler that calls `execute` mid-function hides the write inside logic that could have been pure.
-- Pure state functions get time and randomness from the context: `:biff.fx/now`, `:biff.fx/random-uuid7-seq`, `:biff.fx/random-uuid4-seq`, and `:biff.fx/seed`. Calling `(java.time.Instant/now)` or `random-uuid` inside a state function makes it impure and its tests nondeterministic.
-- The database is the single source of truth for what a page shows, and tab state (a table keyed by `tab-id`) is the source for per-tab UI state. Server-side atoms holding UI state are invisible to the re-render loop.
-- `authorized-write` is the honest write path for user actions: the diff it builds is checked against one declared policy. `execute` for a user-initiated write is a hidden bypass of that policy.
-- Let It Crash, Biff edition: a failing effect throws `ex-info` with `:biff.fx/trace`, and biff.ring's internal-error middleware turns it into the `on-error` page. Do not catch and swallow around effects. Background jobs are not retried, so work that must eventually succeed needs a persisted record that a scheduled task re-submits, not a catch block.
-- Test state functions directly: call a pipeline with no arguments to get its step functions and assert on the returned effect descriptors. No database or mocks are needed.
+Cite principles by number, as `clojure-lenses` describes. Biff adds these translations:
+
+- **P03 (I/O at the Boundary):** Handlers built with `defpipeline` return effects as data. `{:_ [:biff.sqlite.fx/authorized-write {...}] :status 204}` states exactly what the handler does, and a handler that calls `execute` mid-function hides the write inside logic that could have been pure.
+- **P03 for time and randomness:** Upstream's list of calls that reach outside the process includes clock, random, and UUID calls. Pure state functions get these from the context: `:biff.fx/now`, `:biff.fx/random-uuid7-seq`, `:biff.fx/random-uuid4-seq`, and `:biff.fx/seed`. Calling `(java.time.Instant/now)` or `random-uuid` inside a state function makes it impure and its tests nondeterministic.
+- **P05 (DOM as State):** Biff 2 renders each page on the server and patches it into the browser with Datastar, which is close to the server-rendered design that P05 describes, although P05 names HTMX. The database is the source for what a page shows, and tab state (a table keyed by `tab-id`) is the source for per-tab UI state. Server-side atoms holding UI state are a second copy that the re-render loop cannot see.
+- **P11 (Type Declarations Over Imperative Validation):** `authorized-write` checks the diff it builds against one declared policy, so it is the honest write path for user actions. `execute` for a user-initiated write bypasses that policy.
+- **P08 (Typed Exceptions at the Boundary):** A failing effect throws `ex-info` with `:biff.fx/trace`, and biff.ring's internal-error middleware, the boundary, turns it into the `on-error` page. Do not catch and swallow around effects. P08 puts retries in the queue infrastructure, and Biff background jobs are not retried, so work that must eventually succeed needs a persisted record that a scheduled task re-submits, not a catch block.
+- **P10 (Pure Function Assertions Over Mocks):** Test state functions directly. Call a pipeline with no arguments to get its step functions, and assert on the returned effect descriptors. No database or mocks are needed.
 
 ## Legacy Code
 
