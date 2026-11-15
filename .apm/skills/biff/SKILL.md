@@ -144,6 +144,8 @@ Detailed patterns live in `references/biff-reference.md`. Load it when working o
 - Background tasks and queues, authentication, the admin dashboard
 - Project tasks, the REPL workflow, custom tasks, and the XTDB 2 alternative
 
+`references/simple-design.md` shows how Biff's constructs carry out Key Rule 20 of the `clojure` skill ("Choose simple over easy"). Load it when designing a handler, deciding where a decision and its effect belong, choosing between a direct call and a `biff.background` queue, or deciding what a helper receives from the context.
+
 ## Gotchas
 
 - **Java 21 or later is required.** The Biff README requires it, and biff.ring runs Jetty on virtual threads. The starter README says Java 17, which is wrong. `biff.xtdb` needs Java 21 or later but earlier than 25, plus extra JVM options.

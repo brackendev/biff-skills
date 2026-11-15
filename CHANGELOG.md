@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.2.14] - 2026-11-15
+
+### Added
+
+- `biff` skill: the `references/simple-design.md` reference shows how Biff 2 carries out Key Rule 20 of the `clojure` skill ("Choose simple over easy"). A table lists the concerns that Biff already keeps apart, with the Biff construct for each and the second mechanism not to build beside it. The reference covers pure state functions that return effect descriptors, collaborators taken from the context, `biff.background` as the queue with its limits, and data declarations for queries, schema, routes, and authorization. Its pipeline example and test were run against biff.fx 2.0.3.
+
 ## [0.2.13] - 2026-10-31
 
 ### Changed
